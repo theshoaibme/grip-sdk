@@ -326,7 +326,13 @@ class Grip:
 
         res = self._http.get(self._url("/api/v1/sessions"))
         res.raise_for_status()
-        return [SessionSummary(**s) for s in res.json()]
+        data = res.json()
+        raw_list = data.get("sessions", data) if isinstance(data, dict) else data
+        return [
+            s if isinstance(s, SessionSummary) else SessionSummary(**s)
+            for s in (raw_list if isinstance(raw_list, list) else [])
+        ]
+
 
     def _delete_session(self, session_id: str) -> bool:
         if self._engine is not None and not self.base_url:
