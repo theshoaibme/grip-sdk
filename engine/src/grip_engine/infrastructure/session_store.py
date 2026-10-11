@@ -27,8 +27,16 @@ class SessionStore(_BaseSessionStore):
     def delete_session(self, session_id: str) -> bool:
         return self.delete(session_id)
 
+    def list(self) -> list[GoogleAISession]:
+        with self._lock:
+            return list(self._sessions.values())
+
     def list_sessions(self) -> list[GoogleAISession]:
         return self.list()
+
+    def count(self) -> int:
+        with self._lock:
+            return len(self._sessions)
 
     def clear_all(self) -> int:
         return self.clear()

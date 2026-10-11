@@ -83,7 +83,13 @@ def create_app(
             "ready": ready,
             "reason": reason,
             "provider": getattr(sdk_client, "provider_name", getattr(getattr(sdk_client, "engine", None), "name", "grip")),
-            "active_sessions": sdk_client.sessions.count(),
+            "active_sessions": (
+                sdk_client.sessions.count()
+                if hasattr(sdk_client.sessions, "count")
+                else len(sdk_client.sessions.list())
+                if hasattr(sdk_client.sessions, "list")
+                else 0
+            ),
         })
 
     @app.post("/verify/clear")

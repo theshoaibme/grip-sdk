@@ -163,8 +163,8 @@ def create_app(
         if err:
             return err
 
-        client = _client_key()
-        allowed, retry_after = limiter.check(client)
+        client_ip = _client_key()
+        allowed, retry_after = limiter.check(client_ip)
         if not allowed:
             return error_response(
                 "Rate limit exceeded for this client",
@@ -227,8 +227,8 @@ def create_app(
         if err:
             return err
 
-        client = _client_key()
-        allowed, retry_after = limiter.check(client)
+        client_ip = _client_key()
+        allowed, retry_after = limiter.check(client_ip)
         if not allowed:
             return error_response(
                 "Rate limit exceeded for this client",
@@ -336,8 +336,8 @@ def create_app(
         if err:
             return err
 
-        client = _client_key()
-        allowed, retry_after = limiter.check(client)
+        client_ip = _client_key()
+        allowed, retry_after = limiter.check(client_ip)
         if not allowed:
             return error_response(
                 "Rate limit exceeded for this client",
@@ -372,8 +372,8 @@ def create_app(
         if err:
             return err
 
-        client = _client_key()
-        allowed, retry_after = limiter.check(client)
+        client_ip = _client_key()
+        allowed, retry_after = limiter.check(client_ip)
         if not allowed:
             return error_response(
                 "Rate limit exceeded for this client",
@@ -384,7 +384,7 @@ def create_app(
         # Compile query with active rules / identity / response format
         rules_str = client.rules.compile() if hasattr(client, "rules") else ""
         skills_str = client.skills.compile() if hasattr(client, "skills") else ""
-        directives = [d for d in (rules_str, skills_str) if d]
+        directives = [str(d) for d in (rules_str, skills_str) if d and isinstance(d, str) and str(d).strip()]
         compiled_query = f"{query}\n\n" + "\n\n".join(directives) if directives else None
 
         def generate():

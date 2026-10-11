@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def check_tests() -> bool:
     print("🧪 Running full test suite...")
-    cmd = [sys.executable, "-m", "pytest", "tests/"]
+    cmd = [sys.executable, "-m", "pytest", "-v", "tests/", "packages/grip-python/tests/"]
     result = subprocess.run(cmd, cwd=ROOT)
     return result.returncode == 0
 

@@ -33,6 +33,9 @@ class SessionsResource:
     def list(self) -> list[SessionSummary]:
         return self._client._list_sessions()
 
+    def count(self) -> int:
+        return len(self.list())
+
     def delete(self, session_id: str) -> bool:
         return self._client._delete_session(session_id=session_id)
 
@@ -87,6 +90,9 @@ class AsyncSessionsResource:
 
     async def list(self) -> list[SessionSummary]:
         return await self._client._list_sessions()
+
+    async def count(self) -> int:
+        return len(await self.list())
 
     async def delete(self, session_id: str) -> bool:
         return await self._client._delete_session(session_id=session_id)
