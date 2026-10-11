@@ -267,7 +267,7 @@ class Grip:
             sess = self._engine.session_store.create_session(
                 title=title, session_id=session_id, metadata=metadata
             )
-            return SessionDetail(
+            detail = SessionDetail(
                 session_id=sess.session_id,
                 title=sess.title,
                 created_at=sess.created_at,
@@ -275,19 +275,23 @@ class Grip:
                 messages=[SessionMessage(**m.to_dict()) for m in sess.messages],
                 metadata=sess.metadata,
             )
+            detail._client = self
+            return detail
 
         payload = {"title": title, "session_id": session_id, "metadata": metadata or {}}
         res = self._http.post(self._url("/api/v1/sessions"), json=payload)
         res.raise_for_status()
         data = res.json()
-        return SessionDetail(**data)
+        detail = SessionDetail(**data)
+        detail._client = self
+        return detail
 
     def _get_session(self, session_id: str) -> SessionDetail | None:
         if self._engine is not None and not self.base_url:
             sess = self._engine.session_store.get_session(session_id)
             if not sess:
                 return None
-            return SessionDetail(
+            detail = SessionDetail(
                 session_id=sess.session_id,
                 title=sess.title,
                 created_at=sess.created_at,
@@ -295,12 +299,16 @@ class Grip:
                 messages=[SessionMessage(**m.to_dict()) for m in sess.messages],
                 metadata=sess.metadata,
             )
+            detail._client = self
+            return detail
 
         res = self._http.get(self._url(f"/api/v1/sessions/{session_id}"))
         if res.status_code == 404:
             return None
         res.raise_for_status()
-        return SessionDetail(**res.json())
+        detail = SessionDetail(**res.json())
+        detail._client = self
+        return detail
 
     def _list_sessions(self) -> list[SessionSummary]:
         if self._engine is not None and not self.base_url:

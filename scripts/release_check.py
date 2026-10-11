@@ -3,17 +3,39 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+# Ensure all source directories are in sys.path
+for p in [
+    ROOT,
+    ROOT / "packages" / "grip-core" / "src",
+    ROOT / "packages" / "grip-python" / "src",
+    ROOT / "engine" / "src",
+]:
+    p_str = str(p)
+    if p_str not in sys.path:
+        sys.path.insert(0, p_str)
+
 
 def check_tests() -> bool:
     print("🧪 Running full test suite...")
+    current_pythonpath = os.environ.get("PYTHONPATH", "")
+    expected_paths = [
+        str(ROOT),
+        str(ROOT / "packages" / "grip-core" / "src"),
+        str(ROOT / "packages" / "grip-python" / "src"),
+        str(ROOT / "engine" / "src"),
+    ]
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.pathsep.join(expected_paths + ([current_pythonpath] if current_pythonpath else []))
+
     cmd = [sys.executable, "-m", "pytest", "-v", "tests/", "packages/grip-python/tests/"]
-    result = subprocess.run(cmd, cwd=ROOT)
+    result = subprocess.run(cmd, cwd=ROOT, env=env)
     return result.returncode == 0
 
 

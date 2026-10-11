@@ -199,7 +199,10 @@ def create_app(
         initial_response = None
         if initial_query and isinstance(initial_query, str) and initial_query.strip():
             try:
-                res = session.ask(initial_query.strip())
+                if hasattr(session, "ask"):
+                    res = session.ask(initial_query.strip())
+                else:
+                    res = sdk_client.sessions.query(session.session_id, initial_query.strip())
                 initial_response = res.to_dict()
             except Exception as exc:
                 app.logger.warning("Initial query in session failed: %s", exc)
@@ -249,10 +252,14 @@ def create_app(
             return error_response("rate limit exceeded", 429, retry_after=retry_after)
 
         try:
-            res = session.ask(query)
+            if hasattr(session, "ask"):
+                res = session.ask(query)
+            else:
+                res = sdk_client.sessions.query(session_id, query)
+            updated = sdk_client.sessions.get(session_id) or session
             return jsonify({
                 **res.to_dict(),
-                "session": session.to_dict(),
+                "session": updated.to_dict(),
             })
         except BotBlockedError as exc:
             return error_response(str(exc), 403)
@@ -287,7 +294,15 @@ def create_app(
         def generate():
             try:
                 delay_sec = max(0.012, (cfg.stream_delay_ms / 1000.0) if hasattr(cfg, "stream_delay_ms") and cfg.stream_delay_ms else 0.02)
-                for chunk in session.stream(query, compiled_query=compiled_query):
+                if hasattr(session, "stream"):
+                    try:
+                        stream_gen = session.stream(query, compiled_query=compiled_query)
+                    except TypeError:
+                        stream_gen = session.stream(compiled_query or query)
+                else:
+                    stream_gen = sdk_client.sessions.stream(session_id, compiled_query or query)
+
+                for chunk in stream_gen:
                     cdata = chunk.to_dict() if hasattr(chunk, "to_dict") else chunk
                     event_type = cdata.get("event", "message")
                     yield _sse(event_type, cdata)

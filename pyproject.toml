@@ -72,6 +72,8 @@ app = ["templates/*.html"]
 pythonpath = [
     ".",
     "packages/grip-core/src",
-    "packages/grip-python/src"
+    "packages/grip-python/src",
+    "engine/src"
 ]
+
 
