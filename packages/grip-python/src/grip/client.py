@@ -455,6 +455,44 @@ class Grip:
     def delete_session(self, session_id: str) -> bool:
         return self.sessions.delete(session_id=session_id)
 
+    def create_agent(
+        self,
+        name: str = "GripAgent",
+        provider: str = "google",
+        model: str | None = None,
+        instructions: str | None = None,
+        tools: list[Any] | None = None,
+        mcp_clients: list[Any] | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Create an autonomous AI Agent with model based on provider, tools, PDF creation, and MCP support."""
+        from .agent import Agent
+        return Agent(
+            name=name,
+            provider=provider,
+            model=model,
+            instructions=instructions,
+            client=self,
+            tools=tools,
+            mcp_clients=mcp_clients,
+            **kwargs,
+        )
+
+    def agent(
+        self,
+        provider: str = "google",
+        model: str | None = None,
+        instructions: str | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Shorthand to create an autonomous AI Agent."""
+        return self.create_agent(
+            provider=provider,
+            model=model,
+            instructions=instructions,
+            **kwargs,
+        )
+
     def clear_sessions(self) -> int:
         return self.sessions.clear()
 

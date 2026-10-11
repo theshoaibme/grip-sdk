@@ -233,3 +233,36 @@ def unit_converter(value: float, from_unit: str, to_unit: str) -> float:
         return round(value - 273.15, 2)
 
     raise ValueError(f"Unsupported unit conversion from '{from_unit}' to '{to_unit}'")
+
+
+# --- 7. PDF Document Generator ---
+
+def create_pdf(
+    output_path: str,
+    title: str,
+    content: str,
+    author: str = "Grip AI Agent",
+    page_size: str = "A4",
+) -> dict[str, Any]:
+    """Generate and save a formatted PDF document from markdown or text content.
+
+    Args:
+        output_path: Destination path where the PDF will be saved (e.g. 'output/report.pdf').
+        title: Document title displayed on the header.
+        content: Text or markdown body of the document.
+        author: Optional author metadata (defaults to 'Grip AI Agent').
+        page_size: Paper size, 'A4' (default) or 'LETTER'.
+
+    Returns:
+        Dictionary with status, saved file path, page count, and byte size.
+    """
+    from .pdf_builder import generate_pdf
+
+    return generate_pdf(
+        output_path=output_path,
+        title=title,
+        content=content,
+        author=author,
+        page_size=page_size,
+    )
+

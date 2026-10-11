@@ -10,6 +10,7 @@ from .async_client import AsyncClient, AsyncGrip, AsyncGripClient
 from .client import Client, Grip, GripClient
 from .config import ClientConfig, Config, get_config
 from .exceptions import BotBlockedError, ConfigurationError, GripError, ProviderError
+from .agent import Agent, AgentResult, AgentStep, MCPClient
 from .types import (
     Metadata,
     SearchResponse,
@@ -35,6 +36,10 @@ __all__ = [
     "AsyncGrip",
     "AsyncClient",
     "AsyncGripClient",
+    "Agent",
+    "AgentResult",
+    "AgentStep",
+    "MCPClient",
     "Config",
     "ClientConfig",
     "get_config",

@@ -85,6 +85,10 @@ class ToolRegistry:
             # Or direct:
             client.tools.register("my_tool", "Description", my_fn)
         """
+        if isinstance(name_or_fn, Tool):
+            self._tools[name_or_fn.name] = name_or_fn
+            return name_or_fn
+
         # Used as @register or @register()
         if callable(name_or_fn) and fn is None:
             actual_fn = name_or_fn
@@ -141,6 +145,7 @@ class ToolRegistry:
         from .builtin import (
             calculator,
             citation_verifier,
+            create_pdf,
             json_extractor,
             page_fetcher,
             summarizer,
@@ -153,6 +158,7 @@ class ToolRegistry:
         self.register(summarizer)
         self.register(json_extractor)
         self.register(unit_converter)
+        self.register(create_pdf)
 
     def to_dict(self) -> list[dict[str, Any]]:
         return [t.to_dict() for t in self._tools.values()]

@@ -6,6 +6,7 @@ from google_ai_search.tools.base import ToolRegistry
 from google_ai_search.tools.builtin import (
     calculator,
     citation_verifier,
+    create_pdf,
     json_extractor,
     page_fetcher,
     summarizer,
@@ -20,6 +21,7 @@ def register_builtin_tools(registry: ToolRegistry) -> None:
 __all__ = [
     "calculator",
     "citation_verifier",
+    "create_pdf",
     "page_fetcher",
     "summarizer",
     "json_extractor",
