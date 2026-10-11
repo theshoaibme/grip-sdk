@@ -79,3 +79,15 @@ class SessionDetail:
             "messages": [m.to_dict() if hasattr(m, "to_dict") else m for m in self.messages],
             "metadata": self.metadata,
         }
+
+    def ask(self, query: str, **kwargs: Any) -> Any:
+        client = getattr(self, "_client", None)
+        if client is not None:
+            return client.sessions.query(self.session_id, query, **kwargs)
+        raise NotImplementedError("SessionDetail is not bound to a client instance")
+
+    def stream(self, query: str, **kwargs: Any) -> Any:
+        client = getattr(self, "_client", None)
+        if client is not None:
+            return client.sessions.stream(self.session_id, query, **kwargs)
+        raise NotImplementedError("SessionDetail is not bound to a client instance")
