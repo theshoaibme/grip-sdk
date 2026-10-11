@@ -1,13 +1,10 @@
 """Security tests for authentication and rate limits."""
 
 import pytest
-from starlette.testclient import TestClient
-
 from grip_core.security.validation import validate_query, validate_session_id
 from grip_core.errors import ValidationError
 from grip_engine.infrastructure.rate_limit import RateLimiter
-from services.api.app.main import app
-from services.api.app.middleware.authentication import AuthenticationMiddleware
+
 
 
 def test_input_validation_security():
@@ -46,8 +43,9 @@ def test_rate_limiter_throttling():
 
 
 def test_auth_middleware_with_api_key():
-    # Create test instance with API key configured
-    with TestClient(app) as client:
-        # Health check is always public
+    from app.server import create_app
+    flask_app = create_app()
+    with flask_app.test_client() as client:
         res = client.get("/health")
         assert res.status_code == 200
+

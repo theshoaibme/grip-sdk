@@ -39,12 +39,15 @@ def create_app(
     cfg = config or grip.get_config()
     sdk_client = client or grip.Grip(config=cfg)
 
-    cache = TTLCache(ttl=cfg.cache_ttl, max_entries=cfg.cache_max_entries)
+    cache = TTLCache(ttl=getattr(cfg, "cache_ttl", 3600), max_entries=getattr(cfg, "cache_max_entries", 500))
+    rate_cap = getattr(cfg, "rate_limit_capacity", 30)
+    rate_refill = getattr(cfg, "rate_limit_refill_per_sec", 1.0)
     limiter = RateLimiter(
-        capacity=cfg.rate_limit_capacity,
-        refill_per_sec=cfg.rate_limit_refill_per_sec,
-        global_capacity=cfg.rate_limit_capacity * 4,
+        capacity=rate_cap,
+        refill_per_sec=rate_refill,
+        global_capacity=rate_cap * 4,
     )
+
 
     app.extensions["sdk_client"] = sdk_client
     app.extensions["engine"] = sdk_client.engine
