@@ -275,7 +275,7 @@ def create_app(
         # Compile query with active rules / identity / response format
         rules_str = sdk_client.rules.compile() if hasattr(sdk_client, "rules") else ""
         skills_str = sdk_client.skills.compile() if hasattr(sdk_client, "skills") else ""
-        directives = [d for d in (rules_str, skills_str) if d]
+        directives = [str(d) for d in (rules_str, skills_str) if d and isinstance(d, str) and str(d).strip()]
         compiled_query = f"{query}\n\n" + "\n\n".join(directives) if directives else None
 
         def generate():

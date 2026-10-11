@@ -66,3 +66,11 @@ include = ["grip*", "grip_sdk*", "google_ai_search*", "app*"]
 [tool.setuptools.package-data]
 google_ai_search = ["templates/*.html", "server/templates/*.html", "static/*"]
 app = ["templates/*.html"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    ".",
+    "packages/grip-core/src",
+    "packages/grip-python/src"
+]
+

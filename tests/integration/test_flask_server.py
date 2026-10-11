@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.server import create_app
-from grip import Config, SearchResponse, StreamChunk, SourceItem
+from google_ai_search.config import Config
+from grip import SearchResponse, StreamChunk, SourceItem
 
 
 @pytest.fixture
@@ -65,6 +66,7 @@ def flask_test_app():
     mock_sdk.skills.count.return_value = 1
     mock_sdk.skills.register.return_value = mock_skill
     mock_sdk.skills.delete.return_value = True
+    mock_sdk.skills.compile.return_value = ""
 
     # Tools
     mock_sdk.tools.to_dict.return_value = [{"name": "calculator", "description": "Calculator"}]
