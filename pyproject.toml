@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grip-sdk"
-version = "0.3.3"
+version = "0.3.4"
 description = "Grip SDK — AI Search, Web Agent & Conversational Input Sessions library (inspired by grip.theshoaib.me)"
 readme = "README.md"
 requires-python = ">=3.10"
