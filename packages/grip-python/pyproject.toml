@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grip-sdk"
+version = "0.3.0"
+description = "Python client SDK for Grip Platform (https://grip.theshoaib.me/)"
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "theshoaib", email = "shoaib@theshoaib.me" }]
+
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[project.scripts]
+grip = "grip.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

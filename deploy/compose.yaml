@@ -1,0 +1,27 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/docker/api.Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - BROWSER_HEADLESS=true
+      - GRIP_DEFAULT_PROVIDER=google
+    volumes:
+      - ../data/sessions:/app/data/sessions
+      - ../data/profile:/app/data/profile
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/docker/worker.Dockerfile
+    environment:
+      - GRIP_DEFAULT_PROVIDER=google
+    volumes:
+      - ../data/sessions:/app/data/sessions
+    restart: unless-stopped
+    depends_on:
+      - api

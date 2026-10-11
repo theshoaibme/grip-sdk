@@ -1,0 +1,137 @@
+"""Response data structures for AI searches and token streaming."""
+
+from __future__ import annotations
+
+import json
+import time
+from dataclasses import dataclass, field
+from typing import Any
+
+from .source import SourceItem
+
+
+@dataclass
+class Metadata:
+    """Search metadata metrics and timestamps."""
+
+    search_time: float = 0.0
+    cached: bool = False
+    provider: str = "grip"
+    timestamp: float = field(default_factory=time.time)
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "search_time": round(self.search_time, 3),
+            "cached": self.cached,
+            "provider": self.provider,
+            "timestamp": self.timestamp,
+            **self.extra,
+        }
+
+
+@dataclass
+class SearchResponse:
+    """The synthesized AI search answer with grounded citations and metadata."""
+
+    query: str
+    answer: str
+    sources: list[SourceItem] = field(default_factory=list)
+    session_id: str | None = None
+    thread_id: str | None = None
+    suggestions: list[str] = field(default_factory=list)
+    thinking: str | None = None
+    thinking_time: float | None = None
+    cached: bool = False
+    provider: str = "grip"
+    status: str = "success"
+    search_time: float = 0.0
+    timestamp: float = field(default_factory=time.time)
+    metadata: dict[str, Any] | Metadata = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        meta_dict = self.metadata.to_dict() if isinstance(self.metadata, Metadata) else self.metadata
+        return {
+            "query": self.query,
+            "answer": self.answer,
+            "sources": [s.to_dict() if hasattr(s, "to_dict") else s for s in self.sources],
+            "cached": self.cached,
+            "provider": self.provider,
+            "status": self.status,
+            "thinking": self.thinking,
+            "session_id": self.session_id,
+            "thread_id": self.thread_id,
+            "suggestions": self.suggestions,
+            "search_time": round(self.search_time, 3),
+            "timestamp": self.timestamp,
+            "metadata": meta_dict,
+        }
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+
+@dataclass
+class StreamChunk:
+    """A streaming token or thought event chunk yielded during search generation."""
+
+    event: str = "delta"  # "delta" | "thinking" | "done" | "error"
+    delta: str = ""
+    text: str = ""
+    content: str = ""
+    thinking: str | None = None
+    sources: list[SourceItem] = field(default_factory=list)
+    response: SearchResponse | None = None
+    error: str | None = None
+
+    def __init__(
+        self,
+        event: str | None = None,
+        type: str | None = None,
+        delta: str = "",
+        text: str = "",
+        content: str = "",
+        thinking: str | None = None,
+        sources: list[SourceItem] | None = None,
+        response: SearchResponse | None = None,
+        error: str | None = None,
+    ) -> None:
+        self.event = event or type or "delta"
+        self.delta = delta
+        self.text = text or delta
+        self.content = content or text or delta
+        self.thinking = thinking
+        self.sources = sources or []
+        self.response = response
+        self.error = error
+
+    @property
+    def type(self) -> str:
+        return self.event
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"event": self.event, "type": self.event}
+        if self.delta:
+            d["delta"] = self.delta
+        if self.text:
+            d["text"] = self.text
+        if self.content:
+            d["content"] = self.content
+        if self.thinking:
+            d["thinking"] = self.thinking
+        if self.sources:
+            d["sources"] = [s.to_dict() if hasattr(s, "to_dict") else s for s in self.sources]
+        if self.response:
+            d["response"] = self.response.to_dict()
+        if self.error:
+            d["error"] = self.error
+        return d
+
+    def __getitem__(self, item: str) -> Any:
+        return self.to_dict()[item]
+
+    def get(self, item: str, default: Any = None) -> Any:
+        return self.to_dict().get(item, default)
+
+    def __contains__(self, item: str) -> bool:
+        return item in self.to_dict()

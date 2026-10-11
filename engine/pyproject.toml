@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grip-engine"
+version = "0.3.0"
+description = "Grip Platform Search Engine with Dynamic Multi-Provider Architecture"
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "theshoaib", email = "shoaib@theshoaib.me" }]
+
+dependencies = [
+    "playwright>=1.40.0",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grip-sdk"
+version = "0.3.0"
+description = "Grip SDK — AI Search, Web Agent & Conversational Input Sessions library (inspired by grip.theshoaib.me)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "theshoaib", email = "shoaib@theshoaib.me" }
+]
+keywords = [
+    "grip",
+    "grip-sdk",
+    "google-ai",
+    "ai-search",
+    "ai-mode",
+    "agent",
+    "playwright",
+    "search",
+    "input-sessions",
+    "conversational-search"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "Flask>=3.0.0",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+    "playwright>=1.40.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "responses>=0.25.0",
+    "build>=1.0.0",
+    "twine>=5.0.0",
+]
+
+[project.scripts]
+grip = "grip.cli:main"
+grip-sdk = "grip.cli:main"
+google-ai-search = "grip.cli:main"
+
+[project.urls]
+Homepage = "https://grip.theshoaib.me/"
+Repository = "https://github.com/theshoaib/grip"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["grip*", "grip_sdk*", "google_ai_search*", "app*"]
+
+[tool.setuptools.package-data]
+google_ai_search = ["templates/*.html", "server/templates/*.html", "static/*"]
+app = ["templates/*.html"]

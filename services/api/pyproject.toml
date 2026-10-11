@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grip-api"
+version = "0.3.0"
+description = "Grip Platform API Service"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "pydantic>=2.0.0",
+    "grip-core",
+    "grip-engine",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

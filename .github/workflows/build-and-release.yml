@@ -1,0 +1,57 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build Distribution Packages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip build wheel
+
+      - name: Build All Platform Packages
+        run: |
+          python scripts/build.py
+
+      - name: Collect Distribution Artifacts
+        run: |
+          mkdir -p artifacts
+          cp -r packages/grip-core/dist/* artifacts/ 2>/dev/null || true
+          cp -r packages/grip-python/dist/* artifacts/ 2>/dev/null || true
+          cp -r engine/dist/* artifacts/ 2>/dev/null || true
+          ls -la artifacts/
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: grip-platform-dist
+          path: artifacts/
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
