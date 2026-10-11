@@ -4,3 +4,7 @@ python-dotenv>=1.2.2
 playwright>=1.40.0
 pytest>=9.0.3
 responses>=0.25.3
+fastapi>=0.100.0
+uvicorn>=0.20.0
+pydantic>=2.0.0
+httpx>=0.24.0
