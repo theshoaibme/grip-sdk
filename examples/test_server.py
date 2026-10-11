@@ -17,13 +17,27 @@ import json
 import logging
 import os
 import sys
+from pathlib import Path
 from typing import Any
+
+# Ensure local monorepo packages are discoverable if not globally installed
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in [
+    _ROOT / "packages" / "grip-python" / "src",
+    _ROOT / "packages" / "grip-core" / "src",
+    _ROOT / "engine" / "src",
+    _ROOT,
+]:
+    _p_str = str(_p)
+    if _p.exists() and _p_str not in sys.path:
+        sys.path.insert(0, _p_str)
 
 from flask import Flask, Response, jsonify, render_template_string, request
 
 # Import official Grip SDK
 import grip
 from grip import Grip, __version__
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("grip_test_server")
