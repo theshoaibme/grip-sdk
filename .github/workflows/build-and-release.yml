@@ -57,10 +57,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish grip-sdk to PyPI
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && env.HAVE_PYPI_TOKEN == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: packages/grip-python/dist/
           skip-existing: true
+        env:
+          HAVE_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN != '' }}
+
 
