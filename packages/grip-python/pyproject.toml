@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grip-sdk"
-version = "0.3.0"
+version = "0.3.3"
 description = "Python client SDK for Grip Platform (https://grip.theshoaib.me/)"
 requires-python = ">=3.10"
 readme = "README.md"
@@ -13,7 +13,9 @@ authors = [{ name = "theshoaib", email = "shoaib@theshoaib.me" }]
 
 dependencies = [
     "requests>=2.33.0",
+    "python-dotenv>=1.2.2",
 ]
+
 
 
 [project.scripts]

@@ -2,11 +2,12 @@
 
 import os
 from dataclasses import dataclass, field
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
-from .exceptions import ConfigError
-
-load_dotenv()
 
 
 def _get_int(name: str, default: int) -> int:

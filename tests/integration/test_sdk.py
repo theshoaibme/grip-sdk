@@ -248,11 +248,13 @@ def test_sdk_context_managers():
 
 
 def test_sdk_cli_commands(capsys):
+    from grip import __version__
     # Test --version
     with pytest.raises(SystemExit):
         cli_main(["--version"])
     out, _ = capsys.readouterr()
-    assert "0.3.0" in out
+    assert __version__ in out
+
 
     # Test providers command
     ret = cli_main(["providers"])

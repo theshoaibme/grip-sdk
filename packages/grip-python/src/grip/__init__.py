@@ -19,8 +19,13 @@ from .types import (
     SourceItem,
     StreamChunk,
 )
-from grip_engine.infrastructure.cache import TTLCache
-from grip_engine.infrastructure.rate_limit import RateLimiter
+try:
+    from grip_engine.infrastructure.cache import TTLCache
+    from grip_engine.infrastructure.rate_limit import RateLimiter
+except ImportError:
+    TTLCache = None  # type: ignore[assignment, misc]
+    RateLimiter = None  # type: ignore[assignment, misc]
+
 
 __all__ = [
     "__version__",
