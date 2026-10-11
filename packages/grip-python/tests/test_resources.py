@@ -28,11 +28,19 @@ def test_search_resource_callable():
 def test_sessions_resource_operations():
     mock_client = MagicMock()
     mock_client._create_session.return_value = MagicMock(session_id="s1")
-    mock_client._list_sessions.return_value = []
+    mock_sess = MagicMock(session_id="s1")
+    mock_sess.to_dict.return_value = {"session_id": "s1", "title": "My Title"}
+    mock_client._list_sessions.return_value = [mock_sess]
     mock_client._delete_session.return_value = True
+
 
     sess_mgr = SessionsResource(mock_client)
     s = sess_mgr.create(title="My Title")
     assert s.session_id == "s1"
-    assert sess_mgr.list() == []
+    assert len(sess_mgr.list()) == 1
+    assert sess_mgr.count() == 1
+    dicts = sess_mgr.list_dicts(limit=10)
+    assert len(dicts) == 1
+    assert dicts[0]["session_id"] == "s1"
     assert sess_mgr.delete("s1") is True
+

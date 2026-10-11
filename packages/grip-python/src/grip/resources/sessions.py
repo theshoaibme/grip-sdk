@@ -36,6 +36,11 @@ class SessionsResource:
     def count(self) -> int:
         return len(self.list())
 
+    def list_dicts(self, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
+        sessions = self.list()
+        res = [s.to_dict() if hasattr(s, "to_dict") else s for s in sessions]
+        return res[offset : offset + limit] if (limit or offset) else res
+
     def delete(self, session_id: str) -> bool:
         return self._client._delete_session(session_id=session_id)
 
@@ -93,6 +98,11 @@ class AsyncSessionsResource:
 
     async def count(self) -> int:
         return len(await self.list())
+
+    async def list_dicts(self, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
+        sessions = await self.list()
+        res = [s.to_dict() if hasattr(s, "to_dict") else s for s in sessions]
+        return res[offset : offset + limit] if (limit or offset) else res
 
     async def delete(self, session_id: str) -> bool:
         return await self._client._delete_session(session_id=session_id)

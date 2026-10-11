@@ -12,8 +12,9 @@ license = { text = "MIT" }
 authors = [{ name = "theshoaib", email = "shoaib@theshoaib.me" }]
 
 dependencies = [
-    "requests>=2.31.0",
+    "requests>=2.33.0",
 ]
+
 
 [project.scripts]
 grip = "grip.cli.main:main"
