@@ -61,6 +61,15 @@ def create_app(
             return forwarded.split(",")[0].strip()
         return request.remote_addr or "unknown"
 
+    def _as_dict(obj: Any) -> Any:
+        if obj is None:
+            return {}
+        if hasattr(obj, "to_dict"):
+            return obj.to_dict()
+        if isinstance(obj, dict):
+            return obj
+        return obj
+
     def _sse(event: str, data: dict[str, Any]) -> str:
         return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
@@ -140,7 +149,7 @@ def create_app(
 
         try:
             res = sdk_client.search.query(query, session_id=session_id)
-            return jsonify(res.to_dict())
+            return jsonify(_as_dict(res))
         except BotBlockedError as exc:
             return error_response(str(exc), 403)
         except ProviderError as exc:
@@ -169,9 +178,9 @@ def create_app(
             try:
                 delay_sec = max(0.012, (cfg.stream_delay_ms / 1000.0) if hasattr(cfg, "stream_delay_ms") and cfg.stream_delay_ms else 0.02)
                 for chunk in sdk_client.search.stream(query, session_id=session_id):
-                    cdata = chunk.to_dict() if hasattr(chunk, "to_dict") else chunk
-                    event_type = cdata.get("event", "message")
-                    yield _sse(event_type, cdata)
+                    cdata = _as_dict(chunk)
+                    event_type = cdata.get("event", "message") if isinstance(cdata, dict) else "message"
+                    yield _sse(event_type, cdata if isinstance(cdata, dict) else {"content": str(cdata)})
                     if event_type == "delta":
                         time.sleep(delay_sec)
             except BotBlockedError as exc:
@@ -206,11 +215,11 @@ def create_app(
                     res = session.ask(initial_query.strip())
                 else:
                     res = sdk_client.sessions.query(session.session_id, initial_query.strip())
-                initial_response = res.to_dict()
+                initial_response = _as_dict(res)
             except Exception as exc:
                 app.logger.warning("Initial query in session failed: %s", exc)
 
-        data: dict[str, Any] = {"session": session.to_dict()}
+        data: dict[str, Any] = {"session": _as_dict(session)}
         if initial_response:
             data["initial_response"] = initial_response
         return jsonify(data), 201
@@ -234,7 +243,7 @@ def create_app(
         session = sdk_client.sessions.get(session_id)
         if not session:
             return error_response(f"session '{session_id}' not found", 404)
-        return jsonify(session.to_dict())
+        return jsonify(_as_dict(session))
 
     @app.post("/sessions/<session_id>/query")
     @app.post("/sessions/<session_id>/ask")
@@ -260,9 +269,10 @@ def create_app(
             else:
                 res = sdk_client.sessions.query(session_id, query)
             updated = sdk_client.sessions.get(session_id) or session
+            res_dict = _as_dict(res)
             return jsonify({
-                **res.to_dict(),
-                "session": updated.to_dict(),
+                **(res_dict if isinstance(res_dict, dict) else {"answer": str(res_dict)}),
+                "session": _as_dict(updated),
             })
         except BotBlockedError as exc:
             return error_response(str(exc), 403)
@@ -361,7 +371,7 @@ def create_app(
     @app.get("/api/v1/rules")
     def list_rules():
         return jsonify({
-            "rules": sdk_client.rules.to_dict(),
+            "rules": _as_dict(sdk_client.rules),
             "identity": sdk_client.rules.identity or "",
             "response_format": sdk_client.rules.response_format or "",
             "compiled": sdk_client.rules.compile(),
@@ -382,7 +392,7 @@ def create_app(
             priority=payload.get("priority", 1),
             active=payload.get("active", True),
         )
-        return jsonify(rule.to_dict()), 201
+        return jsonify(_as_dict(rule)), 201
 
     @app.post("/rules/system")
     @app.put("/rules/system")
@@ -411,7 +421,7 @@ def create_app(
         rule = sdk_client.rules.toggle(name, active=active)
         if not rule:
             return error_response(f"rule '{name}' not found", 404)
-        return jsonify(rule.to_dict())
+        return jsonify(_as_dict(rule))
 
     @app.post("/rules/reset")
     @app.post("/api/v1/rules/reset")
@@ -430,7 +440,7 @@ def create_app(
     @app.get("/skills")
     @app.get("/api/v1/skills")
     def list_skills():
-        return jsonify({"skills": sdk_client.skills.to_dict(), "total": sdk_client.skills.count()})
+        return jsonify({"skills": _as_dict(sdk_client.skills), "total": sdk_client.skills.count()})
 
     @app.post("/skills")
     @app.post("/api/v1/skills")
@@ -447,7 +457,7 @@ def create_app(
             instructions=instructions,
             tools=payload.get("tools"),
         )
-        return jsonify(skill.to_dict()), 201
+        return jsonify(_as_dict(skill)), 201
 
     @app.delete("/skills/<name>")
     @app.delete("/api/v1/skills/<name>")
@@ -460,7 +470,7 @@ def create_app(
     @app.get("/tools")
     @app.get("/api/v1/tools")
     def list_tools():
-        return jsonify({"tools": sdk_client.tools.to_dict()})
+        return jsonify({"tools": _as_dict(sdk_client.tools)})
 
     @app.post("/tools/call")
     @app.post("/api/v1/tools/call")
@@ -493,7 +503,7 @@ def create_app(
             abort_on_failure=payload.get("abort_on_failure", True),
         )
         result = plan.execute(sdk_client)
-        return jsonify(result.to_dict())
+        return jsonify(_as_dict(result))
 
     @app.post("/workflows/execute")
     @app.post("/api/v1/workflows/execute")
@@ -509,7 +519,7 @@ def create_app(
                 **s.get("params", {}),
             )
         result = wf.run(sdk_client, initial_input=payload.get("input"))
-        return jsonify(result.to_dict())
+        return jsonify(_as_dict(result))
 
     register_error_handlers(app)
     return app

@@ -263,6 +263,15 @@ class Grip:
         session_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> SessionDetail:
+        def _to_msg(m: Any) -> SessionMessage:
+            if isinstance(m, SessionMessage):
+                return m
+            if isinstance(m, dict):
+                return SessionMessage(**m)
+            if hasattr(m, "to_dict"):
+                return SessionMessage(**m.to_dict())
+            return SessionMessage(role="assistant", content=str(m))
+
         if self._engine is not None and not self.base_url:
             sess = self._engine.session_store.create_session(
                 title=title, session_id=session_id, metadata=metadata
@@ -272,7 +281,7 @@ class Grip:
                 title=sess.title,
                 created_at=sess.created_at,
                 updated_at=sess.updated_at,
-                messages=[SessionMessage(**m.to_dict()) for m in sess.messages],
+                messages=[_to_msg(m) for m in sess.messages],
                 metadata=sess.metadata,
             )
             detail._client = self
@@ -282,11 +291,29 @@ class Grip:
         res = self._http.post(self._url("/api/v1/sessions"), json=payload)
         res.raise_for_status()
         data = res.json()
-        detail = SessionDetail(**data)
+        sess_dict = data["session"] if isinstance(data, dict) and "session" in data and isinstance(data["session"], dict) else data
+        detail = SessionDetail(
+            session_id=sess_dict.get("session_id", ""),
+            title=sess_dict.get("title", ""),
+            thread_id=sess_dict.get("thread_id"),
+            created_at=sess_dict.get("created_at", 0.0),
+            updated_at=sess_dict.get("updated_at", 0.0),
+            messages=[_to_msg(m) for m in sess_dict.get("messages", [])],
+            metadata=sess_dict.get("metadata", {}),
+        )
         detail._client = self
         return detail
 
     def _get_session(self, session_id: str) -> SessionDetail | None:
+        def _to_msg(m: Any) -> SessionMessage:
+            if isinstance(m, SessionMessage):
+                return m
+            if isinstance(m, dict):
+                return SessionMessage(**m)
+            if hasattr(m, "to_dict"):
+                return SessionMessage(**m.to_dict())
+            return SessionMessage(role="assistant", content=str(m))
+
         if self._engine is not None and not self.base_url:
             sess = self._engine.session_store.get_session(session_id)
             if not sess:
@@ -296,7 +323,7 @@ class Grip:
                 title=sess.title,
                 created_at=sess.created_at,
                 updated_at=sess.updated_at,
-                messages=[SessionMessage(**m.to_dict()) for m in sess.messages],
+                messages=[_to_msg(m) for m in sess.messages],
                 metadata=sess.metadata,
             )
             detail._client = self
@@ -306,7 +333,17 @@ class Grip:
         if res.status_code == 404:
             return None
         res.raise_for_status()
-        detail = SessionDetail(**res.json())
+        data = res.json()
+        sess_dict = data["session"] if isinstance(data, dict) and "session" in data and isinstance(data["session"], dict) else data
+        detail = SessionDetail(
+            session_id=sess_dict.get("session_id", ""),
+            title=sess_dict.get("title", ""),
+            thread_id=sess_dict.get("thread_id"),
+            created_at=sess_dict.get("created_at", 0.0),
+            updated_at=sess_dict.get("updated_at", 0.0),
+            messages=[_to_msg(m) for m in sess_dict.get("messages", [])],
+            metadata=sess_dict.get("metadata", {}),
+        )
         detail._client = self
         return detail
 
@@ -328,8 +365,23 @@ class Grip:
         res.raise_for_status()
         data = res.json()
         raw_list = data.get("sessions", data) if isinstance(data, dict) else data
+
+        def _to_summary(s: Any) -> SessionSummary:
+            if isinstance(s, SessionSummary):
+                return s
+            if isinstance(s, dict):
+                return SessionSummary(
+                    session_id=s.get("session_id", ""),
+                    title=s.get("title", ""),
+                    thread_id=s.get("thread_id"),
+                    message_count=s.get("message_count", 0),
+                    created_at=s.get("created_at", 0.0),
+                    updated_at=s.get("updated_at", 0.0),
+                )
+            return s
+
         return [
-            s if isinstance(s, SessionSummary) else SessionSummary(**s)
+            _to_summary(s)
             for s in (raw_list if isinstance(raw_list, list) else [])
         ]
 

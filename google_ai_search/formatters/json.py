@@ -19,7 +19,7 @@ class JSONFormatter:
         indent: int = 2,
         **kwargs: Any,
     ) -> str | dict[str, Any]:
-        data = response.to_dict()
+        data = response.to_dict() if hasattr(response, "to_dict") else response
         if as_string:
             return json.dumps(data, indent=indent)
         return data

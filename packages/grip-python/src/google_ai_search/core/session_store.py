@@ -159,7 +159,7 @@ class GoogleAISession:
 
     def get_history(self) -> list[dict[str, Any]]:
         with self._lock:
-            return [m.to_dict() for m in self.messages]
+            return [m.to_dict() if hasattr(m, "to_dict") else m for m in self.messages]
 
     def to_detail(self) -> SessionDetail:
         with self._lock:

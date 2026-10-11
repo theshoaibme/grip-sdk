@@ -122,7 +122,7 @@ class StreamChunk:
         if self.sources:
             d["sources"] = [s.to_dict() if hasattr(s, "to_dict") else s for s in self.sources]
         if self.response:
-            d["response"] = self.response.to_dict()
+            d["response"] = self.response.to_dict() if hasattr(self.response, "to_dict") else self.response
         if self.error:
             d["error"] = self.error
         return d

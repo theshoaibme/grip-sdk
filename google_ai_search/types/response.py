@@ -89,7 +89,7 @@ class StreamChunk:
         if self.thinking:
             d["thinking"] = self.thinking
         if self.response:
-            d["response"] = self.response.to_dict()
+            d["response"] = self.response.to_dict() if hasattr(self.response, "to_dict") else self.response
         if self.error:
             d["error"] = self.error
         return d

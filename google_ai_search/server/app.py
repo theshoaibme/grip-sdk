@@ -87,6 +87,15 @@ def create_app(
             return forwarded.split(",")[0].strip()
         return request.remote_addr or "unknown"
 
+    def _as_dict(obj: Any) -> Any:
+        if obj is None:
+            return {}
+        if hasattr(obj, "to_dict"):
+            return obj.to_dict()
+        if isinstance(obj, dict):
+            return obj
+        return obj
+
     def _sse(event: str, data: dict[str, Any]) -> str:
         return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
@@ -181,7 +190,7 @@ def create_app(
             try:
                 session = sm.get_or_create(session_id=session_id, engine=eng)
                 res = session.ask(query, engine=eng)
-                return jsonify(res.to_dict())
+                return jsonify(_as_dict(res))
             except BotBlockedError as exc:
                 return error_response(str(exc), 403)
             except ProviderError as exc:
@@ -212,8 +221,9 @@ def create_app(
             app.logger.exception("Search execution error: %s", exc)
             return error_response("Internal search error", 500)
 
-        body = res.to_dict()
-        cache.set(ckey, body)
+        body = _as_dict(res)
+        if isinstance(body, dict):
+            cache.set(ckey, body)
         resp = jsonify(body)
         resp.headers["X-Search-Cache"] = "MISS"
         return resp
@@ -289,11 +299,11 @@ def create_app(
         if initial_query and isinstance(initial_query, str) and initial_query.strip():
             try:
                 initial_res = session.ask(initial_query.strip(), engine=eng)
-                initial_response = initial_res.to_dict()
+                initial_response = _as_dict(initial_res)
             except Exception as exc:
                 app.logger.warning("Initial query in session creation failed: %s", exc)
 
-        data: dict[str, Any] = {"session": session.to_dict()}
+        data: dict[str, Any] = {"session": _as_dict(session)}
         if initial_response:
             data["initial_response"] = initial_response
         return jsonify(data), 201
@@ -319,7 +329,7 @@ def create_app(
         session = sm.get(session_id)
         if not session:
             return error_response(f"Session '{session_id}' not found", 404)
-        return jsonify(session.to_dict())
+        return jsonify(_as_dict(session))
 
     @app.post("/sessions/<session_id>/query")
     @app.post("/sessions/<session_id>/ask")
@@ -347,9 +357,10 @@ def create_app(
 
         try:
             res = session.ask(query, engine=eng)
+            res_dict = _as_dict(res)
             return jsonify({
-                **res.to_dict(),
-                "session": session.to_dict(),
+                **(res_dict if isinstance(res_dict, dict) else {"answer": str(res_dict)}),
+                "session": _as_dict(session),
             })
         except BotBlockedError as exc:
             return error_response(str(exc), 403)
@@ -448,7 +459,7 @@ def create_app(
     @app.get("/api/v1/rules")
     def list_rules():
         return jsonify({
-            "rules": client.rules.to_dict(),
+            "rules": _as_dict(client.rules),
             "identity": client.rules.identity or "",
             "response_format": client.rules.response_format or "",
             "compiled": client.rules.compile(),
@@ -469,7 +480,7 @@ def create_app(
             priority=payload.get("priority", 1),
             active=payload.get("active", True),
         )
-        return jsonify(rule.to_dict()), 201
+        return jsonify(_as_dict(rule)), 201
 
     @app.post("/rules/system")
     @app.put("/rules/system")
@@ -498,7 +509,7 @@ def create_app(
         rule = client.rules.toggle(name, active=active)
         if not rule:
             return error_response(f"rule '{name}' not found", 404)
-        return jsonify(rule.to_dict())
+        return jsonify(_as_dict(rule))
 
     @app.post("/rules/reset")
     @app.post("/api/v1/rules/reset")
@@ -517,7 +528,7 @@ def create_app(
     @app.get("/skills")
     @app.get("/api/v1/skills")
     def list_skills():
-        return jsonify({"skills": client.skills.to_dict(), "total": client.skills.count()})
+        return jsonify({"skills": _as_dict(client.skills), "total": client.skills.count()})
 
     @app.post("/skills")
     @app.post("/api/v1/skills")
@@ -534,7 +545,7 @@ def create_app(
             instructions=instructions,
             tools=payload.get("tools"),
         )
-        return jsonify(skill.to_dict()), 201
+        return jsonify(_as_dict(skill)), 201
 
     @app.delete("/skills/<name>")
     @app.delete("/api/v1/skills/<name>")
@@ -547,7 +558,7 @@ def create_app(
     @app.get("/tools")
     @app.get("/api/v1/tools")
     def list_tools():
-        return jsonify({"tools": client.tools.to_dict()})
+        return jsonify({"tools": _as_dict(client.tools)})
 
     @app.post("/tools/call")
     @app.post("/api/v1/tools/call")
@@ -580,7 +591,7 @@ def create_app(
             abort_on_failure=payload.get("abort_on_failure", True),
         )
         result = plan.execute(client)
-        return jsonify(result.to_dict())
+        return jsonify(_as_dict(result))
 
     @app.post("/workflows/execute")
     @app.post("/api/v1/workflows/execute")
@@ -596,7 +607,7 @@ def create_app(
                 **s.get("params", {}),
             )
         result = wf.run(client, initial_input=payload.get("input"))
-        return jsonify(result.to_dict())
+        return jsonify(_as_dict(result))
 
     register_error_handlers(app)
     return app

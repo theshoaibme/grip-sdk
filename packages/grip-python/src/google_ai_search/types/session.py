@@ -74,6 +74,6 @@ class SessionDetail:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "message_count": len(self.messages),
-            "messages": [m.to_dict() for m in self.messages],
+            "messages": [m.to_dict() if hasattr(m, "to_dict") else m for m in self.messages],
             "metadata": self.metadata,
         }
