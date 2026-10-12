@@ -161,4 +161,4 @@ class ToolRegistry:
         self.register(create_pdf)
 
     def to_dict(self) -> list[dict[str, Any]]:
-        return [t.to_dict() for t in self._tools.values()]
+        return [t.to_dict() if hasattr(t, "to_dict") else t for t in self._tools.values()]

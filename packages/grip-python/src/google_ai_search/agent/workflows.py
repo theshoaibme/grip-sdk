@@ -119,7 +119,7 @@ class Workflow:
         return {
             "name": self.name,
             "description": self.description,
-            "steps": [s.to_dict() for s in self.steps],
+            "steps": [s.to_dict() if hasattr(s, "to_dict") else s for s in self.steps],
         }
 
 

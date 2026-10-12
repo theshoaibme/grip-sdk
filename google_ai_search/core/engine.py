@@ -591,7 +591,7 @@ class GoogleAIModeEngine:
                 for i, w in enumerate(words):
                     token = w + (" " if i < len(words) - 1 else "")
                     yield {"event": "delta", "delta": token, "text": cached_res.answer}
-                yield {"event": "done", "response": cached_res.to_dict()}
+                yield {"event": "done", "response": cached_res.to_dict() if hasattr(cached_res, "to_dict") else cached_res}
                 return cached_res
 
         conv = _handle_conversational_query(query)

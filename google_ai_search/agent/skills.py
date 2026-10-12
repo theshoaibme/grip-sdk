@@ -80,4 +80,4 @@ class SkillsRegistry:
         return len(self._skills)
 
     def to_dict(self) -> list[dict[str, Any]]:
-        return [s.to_dict() for s in self._skills.values()]
+        return [s.to_dict() if hasattr(s, "to_dict") else s for s in self._skills.values()]

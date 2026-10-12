@@ -158,14 +158,14 @@ class RulesRegistry:
         return len(self._rules)
 
     def to_dict(self) -> list[dict[str, Any]]:
-        return [r.to_dict() for r in self.list(active_only=False)]
+        return [r.to_dict() if hasattr(r, "to_dict") else r for r in self.list(active_only=False)]
 
     def to_config_dict(self) -> dict[str, Any]:
         """Full system rules configuration dictionary."""
         return {
             "identity": self._identity or "",
             "response_format": self._response_format or "",
-            "rules": [r.to_dict() for r in self.list(active_only=False)],
+            "rules": [r.to_dict() if hasattr(r, "to_dict") else r for r in self.list(active_only=False)],
             "compiled": self.compile(),
             "total": len(self._rules),
             "active_count": len(self.list(active_only=True)),

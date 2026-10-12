@@ -78,7 +78,7 @@ class AgentResult:
             "output": self.output,
             "provider": self.provider,
             "model": self.model,
-            "steps": [s.to_dict() for s in self.steps],
+            "steps": [s.to_dict() if hasattr(s, "to_dict") else s for s in self.steps],
             "tools_called": self.tools_called,
             "files_created": self.files_created,
             "execution_time": round(self.execution_time, 3),

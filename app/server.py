@@ -361,9 +361,9 @@ def create_app(
                     stream_gen = sdk_client.sessions.stream(session_id, compiled_query or query)
 
                 for chunk in stream_gen:
-                    cdata = chunk.to_dict() if hasattr(chunk, "to_dict") else chunk
-                    event_type = cdata.get("event", "message")
-                    yield _sse(event_type, cdata)
+                    cdata = _as_dict(chunk)
+                    event_type = cdata.get("event", "message") if isinstance(cdata, dict) else "message"
+                    yield _sse(event_type, cdata if isinstance(cdata, dict) else {"content": str(cdata)})
                     if event_type == "delta":
                         time.sleep(delay_sec)
             except BotBlockedError as exc:
