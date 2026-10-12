@@ -20,7 +20,7 @@ ENV/
 # Browser profiles and persistent data
 data/profile/
 data/sessions/
-.chrome-profile/
+.chrome-profile*/
 *.log
 /tmp/grip_*.log
 

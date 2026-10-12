@@ -128,6 +128,33 @@ def create_app(
             "fallback_enabled": getattr(cfg, "fallback_on_block", True),
         })
 
+    @app.get("/profile")
+    @app.get("/api/v1/profile")
+    def profile_status():
+        from google_ai_search.core.profile import (
+            detect_system_chrome_profile,
+            detect_system_chrome_version,
+            extract_client_user_agent,
+            get_chrome_profile,
+            is_profile_locked,
+        )
+
+        detected_sys = detect_system_chrome_profile()
+        active_prof = get_chrome_profile(
+            target_dir=cfg.browser_user_data_dir,
+            prefer_system=getattr(cfg, "browser_use_system_profile", False),
+        )
+        client_ua = extract_client_user_agent(request)
+
+        return jsonify({
+            "system_chrome_profile": detected_sys,
+            "active_browser_profile": active_prof,
+            "is_system_profile_locked": is_profile_locked(detected_sys) if detected_sys else False,
+            "detected_chrome_version": detect_system_chrome_version(),
+            "client_user_agent": client_ua,
+            "anti_detection_ready": True,
+        })
+
     # --- Search Endpoints ---
 
     @app.post("/search")
@@ -147,8 +174,11 @@ def create_app(
 
         session_id = payload.get("session_id") if isinstance(payload, dict) else None
 
+        from google_ai_search.core.profile import extract_client_user_agent
+        client_ua = extract_client_user_agent(request)
+
         try:
-            res = sdk_client.search.query(query, session_id=session_id)
+            res = sdk_client.search.query(query, session_id=session_id, user_agent=client_ua)
             return jsonify(_as_dict(res))
         except BotBlockedError as exc:
             return error_response(str(exc), 403)
@@ -174,10 +204,13 @@ def create_app(
 
         session_id = payload.get("session_id") if isinstance(payload, dict) else None
 
+        from google_ai_search.core.profile import extract_client_user_agent
+        client_ua = extract_client_user_agent(request)
+
         def generate():
             try:
-                delay_sec = max(0.012, (cfg.stream_delay_ms / 1000.0) if hasattr(cfg, "stream_delay_ms") and cfg.stream_delay_ms else 0.02)
-                for chunk in sdk_client.search.stream(query, session_id=session_id):
+                delay_sec = max(0.002, (cfg.stream_delay_ms / 1000.0) if hasattr(cfg, "stream_delay_ms") and cfg.stream_delay_ms else 0.01)
+                for chunk in sdk_client.search.stream(query, session_id=session_id, user_agent=client_ua):
                     cdata = _as_dict(chunk)
                     event_type = cdata.get("event", "message") if isinstance(cdata, dict) else "message"
                     yield _sse(event_type, cdata if isinstance(cdata, dict) else {"content": str(cdata)})

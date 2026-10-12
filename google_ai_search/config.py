@@ -40,6 +40,9 @@ class Config:
     browser_user_data_dir: str = field(
         default_factory=lambda: os.getenv("BROWSER_USER_DATA_DIR", ".chrome-profile")
     )
+    browser_use_system_profile: bool = field(
+        default_factory=lambda: _get_bool("BROWSER_USE_SYSTEM_PROFILE", False)
+    )
     browser_channel: str = field(
         default_factory=lambda: os.getenv("BROWSER_CHANNEL", "chrome")
     )
@@ -54,6 +57,9 @@ class Config:
     )
     user_agent_override: str = field(
         default_factory=lambda: os.getenv("USER_AGENT_OVERRIDE", "")
+    )
+    low_latency_mode: bool = field(
+        default_factory=lambda: _get_bool("LOW_LATENCY_MODE", True)
     )
 
     # Proxy settings

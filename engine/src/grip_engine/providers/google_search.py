@@ -54,15 +54,27 @@ class GoogleSearchProvider(BaseSearchProvider):
         query: str,
         thread_id: str | None = None,
         session_id: str | None = None,
+        user_agent: str | None = None,
         **kwargs: Any,
     ) -> SearchResponse:
-        return self._engine.search(query=query, thread_id=thread_id, session_id=session_id)
+        return self._engine.search(
+            query=query,
+            thread_id=thread_id,
+            session_id=session_id,
+            user_agent=user_agent,
+        )
 
     def stream_search(
         self,
         query: str,
         thread_id: str | None = None,
         session_id: str | None = None,
+        user_agent: str | None = None,
         **kwargs: Any,
     ) -> Generator[dict[str, Any], None, SearchResponse]:
-        return self._engine.stream_search(query=query, thread_id=thread_id, session_id=session_id)
+        return self._engine.stream_search(
+            query=query,
+            thread_id=thread_id,
+            session_id=session_id,
+            user_agent=user_agent,
+        )

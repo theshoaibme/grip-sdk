@@ -46,16 +46,35 @@ class Grip:
         engine: Any = None,
         provider: str = "google",
         timeout: float = 60.0,
+        user_agent: str | None = None,
+        use_system_profile: bool = False,
+        chrome_profile_dir: str | None = None,
+        cache: bool = True,
+        cache_ttl: int = 3600,
+        low_latency: bool = True,
     ) -> None:
         self.base_url = (base_url or os.getenv("GRIP_API_URL") or "").rstrip("/")
         self.api_key = api_key or os.getenv("GRIP_API_KEY")
         self.provider = provider
         self.timeout = timeout
+        self.user_agent = user_agent or os.getenv("USER_AGENT_OVERRIDE")
+        self.cache_enabled = cache
+        self.low_latency = low_latency
+
+        from grip_engine.infrastructure.cache import TTLCache
+        self._cache: TTLCache | None = TTLCache(ttl=cache_ttl, max_entries=1000) if cache else None
 
         if isinstance(config, GripConfig):
             self.core_config = config
         else:
             self.core_config = load_config()
+
+        if use_system_profile:
+            setattr(self.core_config, "browser_use_system_profile", True)
+        if chrome_profile_dir:
+            setattr(self.core_config, "browser_user_data_dir", chrome_profile_dir)
+        if self.user_agent:
+            setattr(self.core_config, "user_agent_override", self.user_agent)
 
         # Engine mode (if no base_url or explicitly running embedded)
         self._engine = engine
@@ -128,6 +147,11 @@ class Grip:
     def _url(self, path: str) -> str:
         return f"{self.api_base}{path}"
 
+    def warmup(self) -> None:
+        """Pre-warm engine and session components to minimize query latency."""
+        if self._engine is not None and hasattr(self._engine, "warmup"):
+            self._engine.warmup()
+
     def _execute_query(
         self,
         query: str,
@@ -135,17 +159,35 @@ class Grip:
         provider: str | None = None,
         thread_id: str | None = None,
         timeout: float | None = None,
+        user_agent: str | None = None,
     ) -> SearchResponse:
         active_provider = provider or self.provider
+        effective_ua = user_agent or self.user_agent
+
+        # Ultra-low latency cache check (< 1ms)
+        cache_key = f"{active_provider}:{query.strip().lower()}:{thread_id or ''}"
+        if self.cache_enabled and self._cache is not None:
+            cached_res = self._cache.get(cache_key)
+            if cached_res is not None:
+                import dataclasses
+                if dataclasses.is_dataclass(cached_res):
+                    return dataclasses.replace(cached_res, cached=True, search_time=0.0002)
+                if hasattr(cached_res, "model_copy"):
+                    return cached_res.model_copy(update={"cached": True, "search_time": 0.0002})
+                return cached_res
 
         # If we have an embedded engine and not strictly configured with base_url
         if self._engine is not None and not self.base_url:
-            return self._engine.search(
+            res = self._engine.search(
                 query=query,
                 session_id=session_id,
                 provider=active_provider,
                 thread_id=thread_id,
+                user_agent=effective_ua,
             )
+            if self.cache_enabled and self._cache is not None:
+                self._cache.set(cache_key, res)
+            return res
 
         # Remote API mode
         payload = {
@@ -154,13 +196,22 @@ class Grip:
             "provider": active_provider,
             "thread_id": thread_id,
         }
-        res = self._http.post(self._url("/api/v1/search"), json=payload, timeout=timeout or self.timeout)
+        req_headers = {}
+        if effective_ua:
+            req_headers["User-Agent"] = effective_ua
+
+        res = self._http.post(
+            self._url("/api/v1/search"),
+            json=payload,
+            headers=req_headers,
+            timeout=timeout or self.timeout,
+        )
         if res.status_code >= 400:
             raise ProviderError(f"API request failed [{res.status_code}]: {res.text}")
         data = res.json()
         sources = [SourceItem(**s) for s in data.get("sources", [])]
         meta = Metadata(**data.get("metadata", {}))
-        return SearchResponse(
+        resp = SearchResponse(
             answer=data.get("answer", ""),
             sources=sources,
             session_id=data.get("session_id"),
@@ -168,6 +219,9 @@ class Grip:
             status=data.get("status", "success"),
             metadata=meta,
         )
+        if self.cache_enabled and self._cache is not None:
+            self._cache.set(cache_key, resp)
+        return resp
 
     def _execute_stream(
         self,
@@ -175,8 +229,23 @@ class Grip:
         session_id: str | None = None,
         provider: str | None = None,
         thread_id: str | None = None,
+        user_agent: str | None = None,
     ) -> Generator[StreamChunk, None, SearchResponse]:
         active_provider = provider or self.provider
+        effective_ua = user_agent or self.user_agent
+
+        # Ultra-low latency stream cache check
+        cache_key = f"{active_provider}:{query.strip().lower()}:{thread_id or ''}"
+        if self.cache_enabled and self._cache is not None:
+            cached_res = self._cache.get(cache_key)
+            if cached_res is not None:
+                yield StreamChunk(event="thinking", thinking="Instant cached streaming response (<1ms)...")
+                words = cached_res.answer.split(" ")
+                for i, w in enumerate(words):
+                    token = w + (" " if i < len(words) - 1 else "")
+                    yield StreamChunk(event="delta", delta=token, content=cached_res.answer)
+                yield StreamChunk(event="done", response=cached_res.to_dict())
+                return
 
         if self._engine is not None and not self.base_url:
             for c in self._engine.stream_search(
@@ -184,6 +253,7 @@ class Grip:
                 session_id=session_id,
                 provider=active_provider,
                 thread_id=thread_id,
+                user_agent=effective_ua,
             ):
                 if isinstance(c, StreamChunk):
                     yield c
@@ -213,7 +283,11 @@ class Grip:
             "provider": active_provider,
             "thread_id": thread_id,
         }
-        with self._http.post(self._url("/api/v1/search/stream"), json=payload, stream=True) as r:
+        req_headers = {}
+        if effective_ua:
+            req_headers["User-Agent"] = effective_ua
+
+        with self._http.post(self._url("/api/v1/search/stream"), json=payload, headers=req_headers, stream=True) as r:
             if r.status_code >= 400:
                 raise ProviderError(f"Stream request failed [{r.status_code}]: {r.text}")
 

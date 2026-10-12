@@ -64,6 +64,7 @@ class AsyncGrip:
         provider: str | None = None,
         thread_id: str | None = None,
         timeout: float | None = None,
+        user_agent: str | None = None,
     ) -> SearchResponse:
         return await asyncio.to_thread(
             self._sync_client._execute_query,
@@ -72,6 +73,7 @@ class AsyncGrip:
             provider=provider or self.provider,
             thread_id=thread_id,
             timeout=timeout,
+            user_agent=user_agent,
         )
 
     async def _execute_stream(
@@ -80,6 +82,7 @@ class AsyncGrip:
         session_id: str | None = None,
         provider: str | None = None,
         thread_id: str | None = None,
+        user_agent: str | None = None,
     ) -> AsyncGenerator[StreamChunk, None]:
         def _get_chunks() -> list[StreamChunk]:
             return list(
@@ -88,6 +91,7 @@ class AsyncGrip:
                     session_id=session_id,
                     provider=provider or self.provider,
                     thread_id=thread_id,
+                    user_agent=user_agent,
                 )
             )
 

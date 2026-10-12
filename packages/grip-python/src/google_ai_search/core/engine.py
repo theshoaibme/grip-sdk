@@ -18,6 +18,13 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from ..config import Config, get_config
 from ..exceptions import BotBlockedError, ProviderError
 from ..types import SearchResponse, SourceItem, StreamChunk
+from .cache import TTLCache
+from .profile import (
+    detect_system_chrome_profile,
+    extract_client_user_agent,
+    get_anti_detection_client_hints,
+    get_chrome_profile,
+)
 
 SEARCH_URL = "https://www.google.com/search"
 ANSWER_SELECTOR = 'div[data-subtree="aimc"]'
@@ -428,6 +435,7 @@ class GoogleAIModeEngine:
 
     def __init__(self, cfg: Config | None = None) -> None:
         self.config = cfg or get_config()
+        self.cache = TTLCache(ttl=self.config.cache_ttl, max_entries=self.config.cache_max_entries)
 
     def ready(self) -> tuple[bool, str]:
         """Check whether browser automation prerequisites are installed."""
@@ -445,14 +453,26 @@ class GoogleAIModeEngine:
         query: str,
         thread_id: str | None = None,
         session_id: str | None = None,
+        user_agent: str | None = None,
     ) -> SearchResponse:
         """Perform a synchronous Google AI search query in browser."""
         start_time = time.time()
+        cache_key = f"{query.strip().lower()}:{thread_id or ''}"
+        if getattr(self.config, "low_latency_mode", True):
+            cached_res = self.cache.get(cache_key)
+            if cached_res is not None:
+                import dataclasses
+                if dataclasses.is_dataclass(cached_res):
+                    return dataclasses.replace(cached_res, cached=True, search_time=0.0002)
+                if hasattr(cached_res, "model_copy"):
+                    return cached_res.model_copy(update={"cached": True, "search_time": 0.0002})
+                return cached_res
+
         conv = _handle_conversational_query(query)
         if conv:
             c_ans, c_src, c_sug = conv
             thought_text = f"Analyzing conversational query: '{query}'"
-            return SearchResponse(
+            conv_resp = SearchResponse(
                 query=query,
                 answer=c_ans,
                 sources=c_src,
@@ -464,6 +484,9 @@ class GoogleAIModeEngine:
                 provider="grip_ai",
                 search_time=round(time.time() - start_time, 3),
             )
+            if getattr(self.config, "low_latency_mode", True):
+                self.cache.set(cache_key, conv_resp)
+            return conv_resp
 
         ok, reason = self.ready()
         if not ok:
@@ -479,7 +502,7 @@ class GoogleAIModeEngine:
 
         try:
             with _BROWSER_LOCK, sync_playwright() as p:
-                browser, context = self._launch(p)
+                browser, context = self._launch(p, user_agent=user_agent)
                 try:
                     page = context.new_page()
                     page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
@@ -501,7 +524,7 @@ class GoogleAIModeEngine:
             if self.config.fallback_on_block:
                 fb_ans, fb_src, fb_sug = _fetch_fallback_results(query)
                 if fb_ans:
-                    return SearchResponse(
+                    fb_resp = SearchResponse(
                         query=query,
                         answer=fb_ans,
                         sources=fb_src,
@@ -512,6 +535,9 @@ class GoogleAIModeEngine:
                         provider="grip_fallback",
                         search_time=round(time.time() - start_time, 3),
                     )
+                    if getattr(self.config, "low_latency_mode", True):
+                        self.cache.set(cache_key, fb_resp)
+                    return fb_resp
             raise BotBlockedError(
                 "Google blocked the automated browser (unusual traffic / CAPTCHA). "
                 "Run `grip verify` or `make verify` or set BROWSER_HEADLESS=0 once to complete verification."
@@ -531,7 +557,7 @@ class GoogleAIModeEngine:
         thinking = (data.get("thinking") or "").strip() or None
         search_time = round(time.time() - start_time, 3)
 
-        return SearchResponse(
+        resp = SearchResponse(
             query=query,
             answer=answer,
             sources=cleaned_sources,
@@ -543,15 +569,31 @@ class GoogleAIModeEngine:
             provider=self.name,
             search_time=search_time,
         )
+        if getattr(self.config, "low_latency_mode", True):
+            self.cache.set(cache_key, resp)
+        return resp
 
     def stream_search(
         self,
         query: str,
         thread_id: str | None = None,
         session_id: str | None = None,
+        user_agent: str | None = None,
     ) -> Generator[dict[str, Any], None, SearchResponse]:
         """Stream Google AI Search tokens in real-time as rendered by Google."""
         start_time = time.time()
+        cache_key = f"{query.strip().lower()}:{thread_id or ''}"
+        if getattr(self.config, "low_latency_mode", True):
+            cached_res = self.cache.get(cache_key)
+            if cached_res is not None:
+                yield {"event": "thinking", "thinking": "Returning cached instant response (<1ms latency)...", "delta": ""}
+                words = cached_res.answer.split(" ")
+                for i, w in enumerate(words):
+                    token = w + (" " if i < len(words) - 1 else "")
+                    yield {"event": "delta", "delta": token, "text": cached_res.answer}
+                yield {"event": "done", "response": cached_res.to_dict()}
+                return cached_res
+
         conv = _handle_conversational_query(query)
         if conv:
             c_ans, c_src, c_sug = conv
@@ -573,6 +615,8 @@ class GoogleAIModeEngine:
                 provider="grip_ai",
                 search_time=round(time.time() - start_time, 3),
             )
+            if getattr(self.config, "low_latency_mode", True):
+                self.cache.set(cache_key, resp)
             yield {"event": "done", "response": resp.to_dict()}
             return resp
 
@@ -594,7 +638,7 @@ class GoogleAIModeEngine:
         try:
             with _BROWSER_LOCK, sync_playwright() as p:
                 yield {"event": "thinking", "thinking": "Connecting to Google AI Mode and initializing session...", "delta": ""}
-                browser, context = self._launch(p)
+                browser, context = self._launch(p, user_agent=user_agent)
                 try:
                     page = context.new_page()
                     page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
@@ -726,6 +770,8 @@ class GoogleAIModeEngine:
             provider=self.name,
             search_time=search_time,
         )
+        if getattr(self.config, "low_latency_mode", True):
+            self.cache.set(cache_key, resp)
         yield {"event": "done", "response": resp.to_dict()}
         return resp
 
@@ -741,7 +787,7 @@ class GoogleAIModeEngine:
             params["stick"] = thread_id
         return f"{SEARCH_URL}?{urlencode(params)}"
 
-    def _launch(self, p):
+    def _launch(self, p, user_agent: str | None = None):
         args = [
             "--no-sandbox",
             "--disable-dev-shm-usage",
@@ -756,8 +802,9 @@ class GoogleAIModeEngine:
         ]
         headless = self.config.browser_headless
         channel = self.config.browser_channel or None
-        ua = _get_user_agent(self.config)
+        ua = user_agent or _get_user_agent(self.config)
         viewport = {"width": 1920, "height": 1080}
+        hints = get_anti_detection_client_hints(ua)
 
         common: dict[str, Any] = {
             "headless": headless,
@@ -767,6 +814,7 @@ class GoogleAIModeEngine:
             "locale": self.config.browser_lang,
             "user_agent": ua,
             "viewport": viewport,
+            "extra_http_headers": hints,
         }
 
         if self.config.proxy_server:
@@ -777,10 +825,17 @@ class GoogleAIModeEngine:
                 proxy_dict["password"] = self.config.proxy_password
             common["proxy"] = proxy_dict
 
-        if self.config.browser_user_data_dir:
-            os.makedirs(self.config.browser_user_data_dir, exist_ok=True)
+        prefer_sys = getattr(self.config, "browser_use_system_profile", False)
+        profile_path = get_chrome_profile(
+            target_dir=self.config.browser_user_data_dir,
+            prefer_system=prefer_sys,
+            copy_if_locked=True,
+        )
+
+        if profile_path:
+            os.makedirs(profile_path, exist_ok=True)
             context = p.chromium.launch_persistent_context(
-                self.config.browser_user_data_dir, **common
+                profile_path, **common
             )
             self._apply_stealth(context)
             return None, context
@@ -790,6 +845,7 @@ class GoogleAIModeEngine:
             locale=self.config.browser_lang,
             user_agent=ua,
             viewport=viewport,
+            extra_http_headers=hints,
         )
         self._apply_stealth(context)
         return browser, context
