@@ -155,6 +155,18 @@ def create_app(
             "anti_detection_ready": True,
         })
 
+    @app.get("/models")
+    @app.get("/api/v1/models")
+    def list_models():
+        models = sdk_client.list_models() if hasattr(sdk_client, "list_models") else []
+        return jsonify({"models": models, "count": len(models)})
+
+    @app.get("/providers")
+    @app.get("/api/v1/providers")
+    def list_providers():
+        provs = sdk_client.list_providers() if hasattr(sdk_client, "list_providers") else []
+        return jsonify({"providers": provs, "count": len(provs)})
+
     # --- Search Endpoints ---
 
     @app.post("/search")

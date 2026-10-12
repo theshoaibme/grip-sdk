@@ -27,6 +27,11 @@ DEFAULT_PROVIDER_MODELS: dict[str, str] = {
     "openai": "gpt-4o",
     "grip": "grip-fast",
     "grip_ai": "grip-deep",
+    "chatgpt": "chatgpt-4o-web",
+    "chatgpt_web": "chatgpt-4o-web",
+    "gemini": "gemini-web",
+    "gemini_web": "gemini-web",
+    "auto": "auto-selected-best",
 }
 
 
@@ -118,6 +123,7 @@ class Agent:
         provider: str = "google",
         model: str | None = None,
         instructions: str | None = None,
+        system_prompt: str | None = None,
         client: Any = None,
         tools: list[Tool | Callable[..., Any]] | None = None,
         mcp_clients: list[MCPClient] | None = None,
@@ -127,7 +133,7 @@ class Agent:
         self.name = name
         self.provider = provider.lower().strip()
         self.model = model or DEFAULT_PROVIDER_MODELS.get(self.provider, "gemini-2.5-flash")
-        self.instructions = instructions or "You are a helpful, autonomous AI assistant equipped with real-time web search, document generation, and tools."
+        self.instructions = instructions or system_prompt or "You are a helpful, autonomous AI assistant equipped with real-time web search, document generation, and tools."
         self.max_steps = max_steps
         self.temperature = temperature
 

@@ -152,6 +152,26 @@ class Grip:
         if self._engine is not None and hasattr(self._engine, "warmup"):
             self._engine.warmup()
 
+    def list_models(self) -> list[dict[str, Any]]:
+        """List registered AI models and readiness status."""
+        if self._engine is not None and hasattr(self._engine, "list_models"):
+            return self._engine.list_models()
+        try:
+            res = self._http.get(self._url("/api/v1/models"), timeout=self.timeout)
+            if res.status_code == 200:
+                return res.json().get("models", [])
+        except Exception:
+            pass
+        from grip_engine.providers.registry import default_provider_registry
+        return default_provider_registry.list_models()
+
+    def list_providers(self) -> list[str]:
+        """List all available provider names."""
+        if self._engine is not None and hasattr(self._engine, "list_providers"):
+            return self._engine.list_providers()
+        from grip_engine.providers.registry import default_provider_registry
+        return default_provider_registry.list_providers()
+
     def _execute_query(
         self,
         query: str,

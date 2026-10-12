@@ -10,6 +10,8 @@ from .infrastructure.session_store import SessionStore
 from .providers.base import BaseSearchProvider
 from .providers.google_search import GoogleSearchProvider
 from .providers.openai_search import OpenAISearchProvider
+from .providers.chatgpt_web import ChatGPTWebProvider
+from .providers.gemini_web import GeminiWebProvider
 from .providers.registry import ProviderRegistry
 
 
@@ -47,6 +49,22 @@ class GripEngine:
             lambda: GoogleSearchProvider(cfg=self.config, name="grip_ai"),
         )
         self.registry.register(
+            "chatgpt",
+            lambda: ChatGPTWebProvider(cfg=self.config, name="chatgpt"),
+        )
+        self.registry.register(
+            "chatgpt_web",
+            lambda: ChatGPTWebProvider(cfg=self.config, name="chatgpt_web"),
+        )
+        self.registry.register(
+            "gemini",
+            lambda: GeminiWebProvider(cfg=self.config, name="gemini"),
+        )
+        self.registry.register(
+            "gemini_web",
+            lambda: GeminiWebProvider(cfg=self.config, name="gemini_web"),
+        )
+        self.registry.register(
             "openai",
             lambda: OpenAISearchProvider(name="openai"),
         )
@@ -81,6 +99,14 @@ class GripEngine:
         """Check status of specified or default provider."""
         provider = self.registry.get(provider_name)
         return provider.ready()
+
+    def list_models(self) -> list[dict[str, Any]]:
+        """List registered AI models and readiness status."""
+        return self.registry.list_models()
+
+    def list_providers(self) -> list[str]:
+        """List all registered provider identifiers."""
+        return self.registry.list_providers()
 
     def register_provider(
         self,
