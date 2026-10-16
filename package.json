@@ -1,0 +1,15 @@
+{
+  "name": "grip-sdk-monorepo",
+  "version": "0.3.4",
+  "private": true,
+  "description": "Bun task runner for the Grip SDK monorepo (Python packages under packages/).",
+  "scripts": {
+    "dev": "PYTHONPATH=packages/core/src:packages/engine/src:packages/sdk/src:. scripts/py -m app.main",
+    "test": "scripts/py -m pytest -v tests/ packages/sdk/tests/",
+    "build": "scripts/py scripts/build.py",
+    "verify": "scripts/py scripts/release_check.py",
+    "sync": "scripts/py scripts/sync_vendored.py",
+    "sync:check": "scripts/py scripts/sync_vendored.py --check",
+    "clean": "find . -type d -name __pycache__ -prune -exec rm -rf {} + ; rm -rf dist build *.egg-info packages/*/dist packages/*/build packages/*/src/*.egg-info"
+  }
+}

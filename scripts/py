@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# Resolve the project Python interpreter, preferring the local virtualenv.
+# Used by the Bun task runner (package.json) so every command targets the same
+# interpreter regardless of the caller's shell or PATH.
+set -e
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT=$(dirname -- "$SCRIPT_DIR")
+
+if [ -x "$ROOT/.venv/bin/python" ]; then
+    exec "$ROOT/.venv/bin/python" "$@"
+fi
+
+exec python3 "$@"

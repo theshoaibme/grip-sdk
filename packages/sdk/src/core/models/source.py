@@ -6,8 +6,12 @@ from dataclasses import dataclass
 from typing import Any
 
 
+from .base import DictAccessMixin
+
+
 @dataclass
-class SourceItem:
+class SourceItem(DictAccessMixin):
+
     """A grounded web source cited in an AI search response."""
 
     url: str = ""

@@ -7,31 +7,36 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from .base import DictAccessMixin
 from .source import SourceItem
 
 
 @dataclass
-class Metadata:
+class Metadata(DictAccessMixin):
     """Search metadata metrics and timestamps."""
 
     search_time: float = 0.0
     cached: bool = False
     provider: str = "grip"
     timestamp: float = field(default_factory=time.time)
+    request_id: str | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        d: dict[str, Any] = {
             "search_time": round(self.search_time, 3),
             "cached": self.cached,
             "provider": self.provider,
             "timestamp": self.timestamp,
             **self.extra,
         }
+        if self.request_id:
+            d["request_id"] = self.request_id
+        return d
 
 
 @dataclass
-class SearchResponse:
+class SearchResponse(DictAccessMixin):
     """The synthesized AI search answer with grounded citations and metadata."""
 
     query: str
@@ -47,11 +52,12 @@ class SearchResponse:
     status: str = "success"
     search_time: float = 0.0
     timestamp: float = field(default_factory=time.time)
+    request_id: str | None = None
     metadata: dict[str, Any] | Metadata = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         meta_dict = self.metadata.to_dict() if isinstance(self.metadata, Metadata) else self.metadata
-        return {
+        d: dict[str, Any] = {
             "query": self.query,
             "answer": self.answer,
             "sources": [s.to_dict() if hasattr(s, "to_dict") else s for s in self.sources],
@@ -66,6 +72,10 @@ class SearchResponse:
             "timestamp": self.timestamp,
             "metadata": meta_dict,
         }
+        if self.request_id:
+            d["request_id"] = self.request_id
+        return d
+
 
     def to_json(self, indent: int = 2) -> str:
         return json.dumps(self.to_dict(), indent=indent)
