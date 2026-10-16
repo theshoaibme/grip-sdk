@@ -18,4 +18,4 @@ where = ["src"]
 include = ["core*", "google_ai_search*"]
 
 [tool.setuptools.package-data]
-google_ai_search = ["templates/*.html", "server/templates/*.html"]
+google_ai_search = ["templates/*.html", "server/templates/*.html", "prompts/*.md"]

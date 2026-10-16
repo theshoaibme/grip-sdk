@@ -375,9 +375,12 @@ def create_app(
                     try:
                         stream_gen = session.stream(query, compiled_query=compiled_query, **stream_kwargs)
                     except TypeError:
-                        stream_gen = session.stream(compiled_query or query, **stream_kwargs)
+                        stream_gen = session.stream(query, **stream_kwargs)
                 else:
-                    stream_gen = sdk_client.sessions.stream(session_id, compiled_query or query, **stream_kwargs)
+                    try:
+                        stream_gen = sdk_client.sessions.stream(session_id, query, **stream_kwargs)
+                    except TypeError:
+                        stream_gen = sdk_client.sessions.stream(session_id, query)
 
                 for chunk in stream_gen:
                     cdata = _as_dict(chunk)

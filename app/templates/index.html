@@ -2667,7 +2667,12 @@
         const fmtVal = txtResponseFormat.value.trim();
         if (fmtVal) sections.push(`[RESPONSE FORMAT INSTRUCTIONS]\n${fmtVal}`);
 
-        const activeList = registeredRules.filter(r => r.active).sort((a, b) => a.priority - b.priority);
+        const activeList = registeredRules.filter(r => r.active).sort((a, b) => {
+          const roleA = a.role === 'user' || !a.role ? 0 : 1;
+          const roleB = b.role === 'user' || !b.role ? 0 : 1;
+          if (roleA !== roleB) return roleA - roleB;
+          return (a.priority || 1) - (b.priority || 1);
+        });
         if (activeList.length > 0) {
           const ruleLines = ['[STRICT BEHAVIORAL RULES]'];
           activeList.forEach((r, idx) => ruleLines.push(`${idx + 1}. ${r.content}`));

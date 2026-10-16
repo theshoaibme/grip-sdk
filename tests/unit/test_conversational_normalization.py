@@ -41,6 +41,14 @@ def test_conversational_identity_across_providers():
     assert res_grip is not None
     assert "Grip AI" in res_grip[0]
 
+    # Typo and repeated character resilience (e.g. whoo aree eyouu, who are youu)
+    for q in ["whoo aree eyouu", "who are youu", "who r u", "whoo are you", "who are u"]:
+        res = _handle_conversational_query(q, provider="google")
+        assert res is not None, f"Failed for query '{q}'"
+        assert "Grip AI" in res[0]
+        assert "Assistant Overview" not in res[0]
+        assert "Core Definition" not in res[0]
+
 
 def test_conversational_capabilities_and_wellbeing():
     res_how = _handle_conversational_query("how are you")

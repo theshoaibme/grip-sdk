@@ -15,6 +15,7 @@ class Rule:
     content: str
     priority: int = 1
     active: bool = True
+    role: str = "user"  # "user" (high priority) | "system"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -22,6 +23,7 @@ class Rule:
             "content": self.content,
             "priority": self.priority,
             "active": self.active,
+            "role": self.role,
         }
 
 

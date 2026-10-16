@@ -134,7 +134,10 @@ class Agent:
         self.name = name
         self.provider = provider.lower().strip()
         self.model = model or DEFAULT_PROVIDER_MODELS.get(self.provider, "gemini-2.5-flash")
-        self.instructions = instructions or system_prompt or "You are a helpful, autonomous AI assistant equipped with real-time web search, document generation, and tools."
+
+        # Load default instructions from markdown template if not provided by user
+        from google_ai_search.prompts import get_system_identity
+        self.instructions = instructions or system_prompt or get_system_identity()
         self.max_steps = max_steps
         self.temperature = temperature
 
@@ -368,18 +371,17 @@ class Agent:
         compiled_rules = self.rules.compile() if hasattr(self, "rules") and self.rules else ""
         system_directives = f"{self.instructions}\n\n{compiled_rules}".strip() if compiled_rules else self.instructions
 
+        # Agent reasoning ReAct prompt loaded from markdown
+        from google_ai_search.prompts import get_agent_reasoning
+        reasoning_template = get_agent_reasoning()
+
         current_prompt = (
             f"{system_directives}\n\n"
             f"Provider: {self.provider}\n"
             f"Model: {self.model}\n\n"
             f"Available Tools:\n{tool_descriptions}\n\n"
             f"User Task: {task}\n\n"
-            "Format your reasoning in these steps:\n"
-            "Thought: <your reasoning>\n"
-            "Action: <tool_name>\n"
-            "Action Input: <json_formatted_tool_arguments>\n"
-            "Or when finished:\n"
-            "Final Answer: <your final comprehensive response>\n"
+            f"{reasoning_template}\n"
         )
 
         for step_idx in range(1, steps_limit + 1):

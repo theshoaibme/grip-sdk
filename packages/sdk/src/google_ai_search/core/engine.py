@@ -282,83 +282,79 @@ def clear_profile_cookies(profile_dir: str | None = None) -> bool:
 
 def _is_greeting(word: str) -> bool:
     """Match greeting words including elongated spellings like hii, heyy, hellooo."""
-    w = word.lower()
-    if re.fullmatch(r"h+i+", w):
+    w = re.sub(r"([a-z])\1+", r"\1", word.lower())
+    if w in {"hi", "hey", "helo", "hello", "yo", "sup", "greetings", "howdy", "wassup", "whatsup", "hola", "bonjour", "salaam"}:
         return True
-    if re.fullmatch(r"h+e+y+", w):
-        return True
-    if re.fullmatch(r"h+e+l+o+", w):
-        return True
-    if re.fullmatch(r"y+o+", w):
-        return True
-    if re.fullmatch(r"s+u+p+", w):
-        return True
-    if w in {"greetings", "howdy", "wassup", "whatsup", "hola", "bonjour", "salaam"}:
-        return True
-    return False
+    w_raw = word.lower()
+    return bool(re.fullmatch(r"h+i+", w_raw) or re.fullmatch(r"h+e+y+", w_raw) or re.fullmatch(r"h+e+l+o+", w_raw) or re.fullmatch(r"y+o+", w_raw) or re.fullmatch(r"s+u+p+", w_raw))
 
 
 def _handle_conversational_query(
     query: str,
     provider: str | None = None,
 ) -> tuple[str, list[SourceItem], list[str]] | None:
-    """Detect common conversational prompts and provide natural, warm AI responses across all providers."""
-    clean = query.split("\n\n[SYSTEM")[0].split("\n\n[STRICT")[0].strip()
-    q = re.sub(r"[^\w\s]", "", clean.lower()).strip()
-    if not q:
+    """Detect conversational queries and provide warm, friendly, natural AI responses across all providers."""
+    # Strip prompt directives
+    clean = query.split("\n\n[SYSTEM")[0].split("\n\n[STRICT")[0].split("\n\n[RESPONSE")[0].strip()
+    q_raw = re.sub(r"[^\w\s]", "", clean.lower()).strip()
+    if not q_raw:
         return None
+    q = q_raw
 
-    words = q.split()
+    # Squashed version collapses consecutive duplicates (whooo -> who, aree -> are, youuu -> you)
+    squashed = re.sub(r"([a-z])\1+", r"\1", q_raw)
+    squashed = re.sub(r"\beyou\b", "you", squashed)
+
+    raw_words = q_raw.split()
+    words = [re.sub(r"\beyou\b", "you", re.sub(r"([a-z])\1+", r"\1", w)) for w in raw_words]
     prov = (provider or "").lower()
     is_chatgpt = "chatgpt" in prov or "openai" in prov
     is_gemini = "gemini" in prov
 
     # 1. Greetings (hi, hii, hiii, hey, heyy, hello, etc.)
-    if len(words) == 1 and _is_greeting(words[0]):
-        return "Hello! How can I help you today?", [], []
+    if len(words) == 1 and (_is_greeting(words[0]) or _is_greeting(raw_words[0])):
+        from ..prompts import get_greeting
+        return get_greeting(), [], []
 
-    if len(words) == 2 and _is_greeting(words[0]) and words[1] in {
-        "there", "grip", "ai", "assistant", "bot", "all", "everyone", "team", "friend", "bro"
+    if len(words) == 2 and (_is_greeting(words[0]) or _is_greeting(raw_words[0])) and words[1] in {
+        "there", "grip", "ai", "assistant", "bot", "all", "everyone", "team", "friend", "bro", "you", "u"
     }:
-        return "Hello! How can I help you today?", [], []
+        from ..prompts import get_greeting
+        return get_greeting(), [], []
 
     # Time-based greetings
     time_greetings = ("good morning", "good afternoon", "good evening", "good day")
     for tg in time_greetings:
-        if q == tg or q.startswith(tg + " "):
+        if q == tg or q.startswith(tg + " ") or squashed == tg or squashed.startswith(tg + " "):
             cap = tg.capitalize()
             return f"{cap}! How can I help you today?", [], []
 
-    # 2. Identity (who are you, what are you, who made you, etc.)
+    # 2. Identity (who are you, what are you, who made you, etc. with typo & squashing resilience)
     identity_triggers = (
-        "who are you", "who r u", "who are u", "what are you", "what r u",
+        "who are you", "who r u", "who are u", "what are you", "what r u", "what are u",
         "whats your name", "what is your name", "who made you", "who created you",
         "who built you", "introduce yourself", "tell me about yourself",
-        "are you an ai", "are you ai", "are you chatgpt", "are you gemini",
+        "are you an ai", "are you ai", "are you chatgpt", "are you gemini", "are you a bot",
+        "who are you doing", "who are you exactly", "who r you",
     )
-    if any(q == it or q.startswith(it + " ") or (" " + it + " ") in (" " + q + " ") for it in identity_triggers):
-        if is_chatgpt:
-            ans = (
-                "I am **ChatGPT** (via Grip AI), an AI assistant developed by OpenAI. "
-                "I can help answer questions, brainstorm ideas, write and debug code, "
-                "analyze information, and assist with various tasks.\n\n"
-                "How can I help you today?"
-            )
-        elif is_gemini:
-            ans = (
-                "I am **Google Gemini** (via Grip AI), an AI assistant developed by Google. "
-                "I can help answer questions, explore topics, write code, analyze data, "
-                "and assist with creative or analytical tasks.\n\n"
-                "How can I help you today?"
-            )
-        else:
-            ans = (
-                "I am **Grip AI**, an intelligent search and reasoning assistant. "
-                "I can help answer questions, analyze topics, search the web in real time, "
-                "write and debug code, and assist with various tasks.\n\n"
-                "How can I help you today?"
-            )
-        return ans, [], []
+    is_identity = (
+        any(squashed == it or squashed.startswith(it + " ") or (" " + it + " ") in (" " + squashed + " ") for it in identity_triggers)
+        or (
+            len(words) <= 5
+            and any(w in words for w in ("who", "what"))
+            and any(w in words for w in ("are", "r", "is", "ur", "re"))
+            and any(w in words for w in ("you", "u", "ya", "yall", "bot", "assistant", "ai"))
+        )
+        or (
+            len(words) in (2, 3)
+            and words[0] in ("who", "what")
+            and words[-1] in ("you", "u", "ya")
+        )
+    )
+
+    if is_identity:
+        from ..prompts import get_identity
+        return get_identity(provider=provider), [], []
 
     # 3. Well-being (how are you, how are you doing, etc.)
     wellbeing_triggers = (
@@ -366,8 +362,9 @@ def _handle_conversational_query(
         "hows it going", "how is it going", "how do you do", "how are things",
         "hows everything", "how is everything", "are you ok", "are you okay",
     )
-    if any(q == wt or q.startswith(wt + " ") or (" " + wt + " ") in (" " + q + " ") for wt in wellbeing_triggers):
-        return "I'm doing well, thank you for asking! How can I help you today?", [], []
+    if any(squashed == wt or squashed.startswith(wt + " ") or (" " + wt + " ") in (" " + squashed + " ") for wt in wellbeing_triggers):
+        from ..prompts import get_wellbeing
+        return get_wellbeing(), [], []
 
     # 4. Capabilities (what can you do, help, etc.)
     capability_triggers = (
@@ -375,29 +372,21 @@ def _handle_conversational_query(
         "what are your features", "how can you help me", "what do you do",
         "what else can you do", "how to use this",
     )
-    if any(q == ct or q.startswith(ct + " ") or (" " + ct + " ") in (" " + q + " ") for ct in capability_triggers):
-        return (
-            "I can assist you with a wide range of tasks:\n\n"
-            "- **Answering Questions**: Clear explanations across technology, science, business, and everyday topics.\n"
-            "- **Live Web Search**: Grounded information with real-time web references and sources.\n"
-            "- **Code & Development**: Writing, debugging, explaining, and refactoring code in multiple languages.\n"
-            "- **Analysis & Writing**: Summarizing articles, drafting documents, brainstorming, and structuring plans.\n\n"
-            "What would you like to work on?"
-        ), [], []
+    if any(q == ct or q.startswith(ct + " ") or (" " + ct + " ") in (" " + q + " ") or squashed == ct or squashed.startswith(ct + " ") for ct in capability_triggers):
+        from ..prompts import get_capabilities
+        return get_capabilities(), [], []
 
     # 5. System rules & guidelines
     rules_triggers = (
         "system rules", "system rule", "what are your rules", "rules", "system prompt",
         "guidelines", "operational rules", "behavioral rules", "instructions",
     )
-    if any(q == rt or q.startswith(rt + " ") or (" " + rt + " ") in (" " + q + " ") for rt in rules_triggers):
+    if any(q == rt or q.startswith(rt + " ") or (" " + rt + " ") in (" " + q + " ") or squashed == rt or squashed.startswith(rt + " ") for rt in rules_triggers):
+        from ..prompts import get_system_rules
         ans = (
             "System rules and behavioral guidelines ensure responses remain accurate, objective, helpful, and safe:\n\n"
             "### Core Guidelines\n\n"
-            "- **Factuality & Verification**: Prioritizing verified facts, primary documentation, and live search results.\n"
-            "- **Safety & Integrity**: Strictly refusing malicious actions, exploit generation, or unauthorized financial/medical advice.\n"
-            "- **Clarity & Structure**: Formatting with clean Markdown headers, bullet points, and syntax-highlighted code blocks.\n"
-            "- **Provider Uniformity**: Ensuring consistent instruction compliance across all AI backends (ChatGPT, Gemini, Grip AI)."
+            f"{get_system_rules()}"
         )
         return ans, [], []
 
@@ -407,12 +396,14 @@ def _handle_conversational_query(
         "thanks a lot", "appreciate it", "many thanks",
     )
     if any(q == gt or q.startswith(gt + " ") or (" " + gt + " ") in (" " + q + " ") for gt in gratitude_triggers):
-        return "You're welcome! Let me know if you need anything else.", [], []
+        from ..prompts import get_gratitude
+        return get_gratitude(), [], []
 
     # 7. Acknowledgements & pleasantries (ok, okay, cool, great, awesome, etc.)
     ack_words = {"ok", "okay", "cool", "got it", "great", "awesome", "perfect", "understood", "nice", "alright", "sure"}
     if q in ack_words or (len(words) <= 2 and words[0] in ack_words):
-        return "Glad to help! Let me know what you'd like to explore next.", [], []
+        from ..prompts import get_acknowledgement
+        return get_acknowledgement(), [], []
 
     # 8. Farewells (bye, goodbye, see you, etc.)
     farewell_triggers = (
@@ -420,7 +411,8 @@ def _handle_conversational_query(
         "have a good day", "have a great day", "have a good one",
     )
     if any(q == ft or q.startswith(ft + " ") or (" " + ft + " ") in (" " + q + " ") for ft in farewell_triggers):
-        return "Goodbye! Have a great day, and feel free to reach out whenever you need assistance.", [], []
+        from ..prompts import get_farewell
+        return get_farewell(), [], []
 
     return None
 
@@ -939,11 +931,24 @@ def _normalize_ai_answer(answer: str, query: str, provider: str | None = None) -
     for outro in robotic_outros:
         cleaned = cleaned.replace(outro, "").strip()
 
-    # Remove robotic formulaic bullet headers and stubs
-    if "focuses on delivering accurate, structured, and modular results" in cleaned or \
-       "logical step-by-step reasoning, and actionable synthesis" in cleaned or \
-       "The requested objective has been processed and validated using public AI intelligence" in cleaned or \
-       "provides comprehensive, multifaceted insights" in cleaned:
+    # Remove robotic formulaic bullet headers, dummy stubs, and synthetic outlines
+    robotic_stubs = (
+        "focuses on delivering accurate, structured, and modular results",
+        "logical step-by-step reasoning, and actionable synthesis",
+        "The requested objective has been processed and validated using public AI intelligence",
+        "provides comprehensive, multifaceted insights",
+        "Assistant Overview",
+        "Role: Intelligent assistant",
+        "Core Definition",
+        "Identity: An autonomous AI assistant",
+        "Function: Designed to deliver structured",
+        "technical data processing capabilities",
+        "tell me what you're working on today so we can get started",
+        "Are you looking for technical documentation or code?",
+        "Do you need help with research or a specific fact-check?",
+        "Are you trying to solve a math or data problem?",
+    )
+    if any(stub in cleaned for stub in robotic_stubs):
         conv = _handle_conversational_query(query, provider=provider)
         if conv:
             return conv[0]
@@ -973,29 +978,30 @@ def _fetch_fallback_results(
     conv = _handle_conversational_query(query, provider=provider)
     if conv:
         return conv
+    clean_q = query.split("\n\n[SYSTEM")[0].split("\n\n[STRICT")[0].split("\n\n[RESPONSE")[0].strip() or query
 
     # 1. Check for dedicated coding and programming solutions first
-    code_ans = _generate_coding_solution(query)
+    code_ans = _generate_coding_solution(clean_q)
     if code_ans:
         return code_ans, [], []
 
     # 2. Check for dedicated scientific and system technical explanations
-    q_low = query.lower()
+    q_low = clean_q.lower()
     if any(k in q_low for k in ("backprop", "neural network", "gravitational wave", "docker", "kubernetes", "rest api")):
-        return _generate_natural_explanation(query), [], []
+        return _generate_natural_explanation(clean_q), [], []
 
     sources: list[SourceItem] = []
     items: list[tuple[str, str, str]] = []
 
     # 3. Fetch factual encyclopedic knowledge via Wikipedia API
-    wiki_items, wiki_sources = _fetch_wikipedia_knowledge(query, max_results=max_results)
+    wiki_items, wiki_sources = _fetch_wikipedia_knowledge(clean_q, max_results=max_results)
     if wiki_items:
         items.extend(wiki_items)
         sources.extend(wiki_sources)
 
-    # 2. Fetch live web results via DuckDuckGo
+    # 4. Fetch live web results via DuckDuckGo
     try:
-        url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote_plus(query)}"
+        url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote_plus(clean_q)}"
         headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -1388,8 +1394,10 @@ class GoogleAIModeEngine:
         return resp
 
     def _render_url(self, query: str, thread_id: str | None = None) -> str:
+        # Strip system directives from the browser search URL so Google searches the clean query
+        clean_q = query.split("\n\n[SYSTEM")[0].split("\n\n[STRICT")[0].split("\n\n[RESPONSE")[0].strip()
         params: dict[str, str] = {
-            "q": query,
+            "q": clean_q or query,
             "udm": "50",
             "hl": self.config.browser_lang,
         }

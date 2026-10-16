@@ -104,25 +104,51 @@ class SessionsResource:
             return f"{query}\n\n" + "\n\n".join(directives)
         return query
 
-    def query(self, session_id: str, query: str) -> SearchResponse:
+    def query(
+        self,
+        session_id: str,
+        query: str,
+        provider: str | None = None,
+        **kwargs: Any,
+    ) -> SearchResponse:
         """Send a query into an existing session."""
         session = self.retrieve(session_id)
         compiled = self._compile_query(query)
-        return session.ask(query, engine=self._engine, compiled_query=compiled if compiled != query else None)
+        return session.ask(
+            query,
+            engine=self._engine,
+            compiled_query=compiled if compiled != query else None,
+            provider=provider,
+            **kwargs,
+        )
 
-    def ask(self, session_id: str, query: str) -> SearchResponse:
+    def ask(
+        self,
+        session_id: str,
+        query: str,
+        provider: str | None = None,
+        **kwargs: Any,
+    ) -> SearchResponse:
         """Alias for query()."""
-        return self.query(session_id, query)
+        return self.query(session_id, query, provider=provider, **kwargs)
 
     def stream(
         self,
         session_id: str,
         query: str,
+        provider: str | None = None,
+        **kwargs: Any,
     ) -> Generator[StreamChunk, None, SearchResponse]:
         """Stream a response within an existing session."""
         session = self.retrieve(session_id)
         compiled = self._compile_query(query)
-        gen = session.stream(query, engine=self._engine, compiled_query=compiled if compiled != query else None)
+        gen = session.stream(
+            query,
+            engine=self._engine,
+            compiled_query=compiled if compiled != query else None,
+            provider=provider,
+            **kwargs,
+        )
 
         final_resp: SearchResponse | None = None
         for raw in gen:

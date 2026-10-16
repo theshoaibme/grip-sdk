@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from ..prompts import get_response_format, get_system_identity
 from ..types.agent import Rule
 
 
@@ -14,12 +15,13 @@ class RulesRegistry:
     def __init__(self) -> None:
         self._rules: dict[str, Rule] = {}
         self._identity: str | None = None
-        self._response_format: str | None = None
+        # Universal response format assigned for all by default (loaded from markdown)
+        self._response_format: str | None = get_response_format()
 
     @property
     def identity(self) -> str | None:
         """System identity / persona directive."""
-        return self._identity
+        return self._identity or get_system_identity()
 
     @identity.setter
     def identity(self, value: str | None) -> None:
@@ -31,12 +33,12 @@ class RulesRegistry:
 
     def get_identity(self) -> str | None:
         """Get the current system identity directive."""
-        return self._identity
+        return self.identity
 
     @property
     def response_format(self) -> str | None:
         """Response format directive."""
-        return self._response_format
+        return self._response_format or get_response_format()
 
     @response_format.setter
     def response_format(self, value: str | None) -> None:
@@ -48,7 +50,7 @@ class RulesRegistry:
 
     def get_response_format(self) -> str | None:
         """Get the current response format directive."""
-        return self._response_format
+        return self.response_format
 
     def add(
         self,
@@ -57,9 +59,10 @@ class RulesRegistry:
         priority: int = 1,
         *,
         content: str | None = None,
+        role: str = "user",
         active: bool = True,
     ) -> Rule:
-        """Add a behavioral rule or negative constraint.
+        """Add a behavioral rule or negative constraint. All user role rules have highest priority.
 
         Usage:
             client.rules.add("Always cite primary scientific sources")
@@ -75,6 +78,7 @@ class RulesRegistry:
                 content=str(actual_content).strip(),
                 priority=priority,
                 active=active,
+                role=role,
             )
         else:
             raise ValueError("Rule content must be provided.")
@@ -96,6 +100,7 @@ class RulesRegistry:
         content: str | None = None,
         priority: int | None = None,
         active: bool | None = None,
+        role: str | None = None,
     ) -> Rule | None:
         """Update an existing rule."""
         rule = self._rules.get(name)
@@ -107,6 +112,8 @@ class RulesRegistry:
             rule.priority = int(priority)
         if active is not None:
             rule.active = bool(active)
+        if role is not None:
+            rule.role = str(role).strip()
         return rule
 
     def remove(self, name: str) -> bool:
@@ -118,20 +125,23 @@ class RulesRegistry:
         return self._rules.get(name)
 
     def list(self, active_only: bool = True, enabled_only: bool | None = None) -> list[Rule]:
-        """List rules sorted by priority ascending (1 = highest priority)."""
+        """List rules with all user role rules receiving top priority, sorted by priority ascending."""
         only = active_only if enabled_only is None else enabled_only
         rules = [r for r in self._rules.values() if not only or r.active]
-        return sorted(rules, key=lambda r: r.priority)
+        # User roles have highest priority (precedence 0 vs 1), then sorted by priority ascending
+        return sorted(rules, key=lambda r: (0 if getattr(r, "role", "user") == "user" else 1, r.priority))
 
     def compile(self) -> str:
-        """Compile system identity, response format, and active rules into structured prompt directives."""
+        """Compile system identity, universal response format, and active rules into structured prompt directives."""
         sections: list[str] = []
 
-        if self._identity and self._identity.strip():
-            sections.append(f"[SYSTEM IDENTITY]\n{self._identity.strip()}")
+        identity = self.identity
+        if identity and identity.strip():
+            sections.append(f"[SYSTEM IDENTITY]\n{identity.strip()}")
 
-        if self._response_format and self._response_format.strip():
-            sections.append(f"[RESPONSE FORMAT INSTRUCTIONS]\n{self._response_format.strip()}")
+        resp_format = self.response_format
+        if resp_format and resp_format.strip():
+            sections.append(f"[RESPONSE FORMAT INSTRUCTIONS]\n{resp_format.strip()}")
 
         active_rules = self.list(active_only=True)
         if active_rules:
@@ -149,10 +159,10 @@ class RulesRegistry:
         return count
 
     def reset(self) -> None:
-        """Reset all rules, system identity, and response format to empty."""
+        """Reset all rules, system identity, and restore default response format."""
         self._rules.clear()
         self._identity = None
-        self._response_format = None
+        self._response_format = get_response_format()
 
     def count(self) -> int:
         return len(self._rules)
@@ -163,8 +173,8 @@ class RulesRegistry:
     def to_config_dict(self) -> dict[str, Any]:
         """Full system rules configuration dictionary."""
         return {
-            "identity": self._identity or "",
-            "response_format": self._response_format or "",
+            "identity": self.identity or "",
+            "response_format": self.response_format or "",
             "rules": [r.to_dict() if hasattr(r, "to_dict") else r for r in self.list(active_only=False)],
             "compiled": self.compile(),
             "total": len(self._rules),

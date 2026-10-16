@@ -41,6 +41,8 @@ class GoogleAISession:
         query: str,
         engine: Any = None,
         compiled_query: str | None = None,
+        provider: str | None = None,
+        **kwargs: Any,
     ) -> SearchResponse:
         """Send a user input query to Google AI Search within this session."""
         active_engine = engine or self.engine
@@ -67,6 +69,8 @@ class GoogleAISession:
                 query=engine_prompt,
                 thread_id=self.thread_id,
                 session_id=self.session_id,
+                provider=provider,
+                **kwargs,
             )
 
             # Update session's thread_id if new one was returned
@@ -91,6 +95,8 @@ class GoogleAISession:
         query: str,
         engine: Any = None,
         compiled_query: str | None = None,
+        provider: str | None = None,
+        **kwargs: Any,
     ) -> Generator[dict[str, Any], None, SearchResponse]:
         """Stream an AI search response in this session."""
         active_engine = engine or self.engine
@@ -116,6 +122,8 @@ class GoogleAISession:
             query=engine_prompt,
             thread_id=self.thread_id,
             session_id=self.session_id,
+            provider=provider,
+            **kwargs,
         )
 
         final_response: SearchResponse | None = None

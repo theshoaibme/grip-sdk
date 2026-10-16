@@ -160,3 +160,81 @@ def test_grip_client_create_agent_shorthand():
     assert agent.name == "AnalystAgent"
     assert agent.provider == "google"
     assert agent.model == "gemini-2.5-flash"
+
+
+def test_prompts_loaded_from_markdown_files():
+    """Verify all system prompts are loaded from markdown files."""
+    from google_ai_search.prompts import (
+        get_agent_reasoning,
+        get_capabilities,
+        get_response_format,
+        get_system_identity,
+        get_system_rules,
+        load_prompt,
+    )
+
+    identity = get_system_identity()
+    assert "autonomous AI assistant" in identity
+    assert len(identity) > 10
+
+    resp_fmt = get_response_format()
+    assert "Markdown" in resp_fmt
+    assert "code blocks" in resp_fmt
+
+    sys_rules = get_system_rules()
+    assert "Factuality" in sys_rules or "Verification" in sys_rules
+
+    caps = get_capabilities()
+    assert "Web Search" in caps or "Code" in caps
+
+    reasoning = get_agent_reasoning()
+    assert "Thought:" in reasoning
+    assert "Action:" in reasoning
+
+
+def test_user_rules_highest_priority():
+    """Verify user role rules have highest priority over system rules."""
+    from google_ai_search.agent.rules import RulesRegistry
+
+    registry = RulesRegistry()
+    # Add a system rule with priority 1
+    registry.add("Base system constraint", name="sys_1", priority=1, role="system")
+    # Add a user rule with priority 2
+    registry.add("User custom constraint", name="user_1", priority=2, role="user")
+
+    sorted_rules = registry.list(active_only=True)
+    # User role rule must come FIRST despite having lower numerical priority
+    assert sorted_rules[0].name == "user_1"
+    assert sorted_rules[0].role == "user"
+    assert sorted_rules[1].name == "sys_1"
+    assert sorted_rules[1].role == "system"
+
+    compiled = registry.compile()
+    lines = compiled.split("\n")
+    # Verify user rule appears before system rule
+    user_idx = next(i for i, line in enumerate(lines) if "User custom constraint" in line)
+    sys_idx = next(i for i, line in enumerate(lines) if "Base system constraint" in line)
+    assert user_idx < sys_idx
+
+
+def test_universal_response_format_assigned_for_all():
+    """Verify universal response format is assigned for all agents and registries by default."""
+    from google_ai_search.agent.rules import RulesRegistry
+
+    registry = RulesRegistry()
+    assert registry.response_format is not None
+    assert "Markdown" in registry.response_format
+
+    compiled = registry.compile()
+    assert "[RESPONSE FORMAT INSTRUCTIONS]" in compiled
+
+    # User can still override response format
+    registry.set_response_format("Output strictly valid JSON.")
+    assert registry.response_format == "Output strictly valid JSON."
+    assert "Output strictly valid JSON." in registry.compile()
+
+    # Agent created also has response format assigned
+    client = grip.Grip()
+    agent = client.create_agent(name="TestAgent")
+    assert agent.rules.response_format is not None
+    assert "[RESPONSE FORMAT INSTRUCTIONS]" in agent.rules.compile()
