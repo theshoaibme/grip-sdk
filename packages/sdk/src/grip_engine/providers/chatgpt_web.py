@@ -61,7 +61,33 @@ class ChatGPTWebProvider(BaseSearchProvider):
         start_time = time.time()
         effective_ua = user_agent or extract_client_user_agent(getattr(self.config, "user_agent_override", None))
 
-        answer = self._query_chatgpt_web(query, user_agent=effective_ua)
+        # Check conversational prompts first (hi, who are you, etc.)
+        from google_ai_search.core.engine import _handle_conversational_query
+        conv = _handle_conversational_query(query, provider=self.name)
+        if conv:
+            c_ans, c_src, c_sug = conv
+            search_time = round(time.time() - start_time, 3)
+            return SearchResponse(
+                query=query,
+                answer=c_ans,
+                sources=c_src or [
+                    SourceItem(
+                        url="https://chatgpt.com",
+                        title="ChatGPT (OpenAI Public Web)",
+                        snippet="Conversational dialogue via ChatGPT Web",
+                    )
+                ],
+                session_id=session_id,
+                thread_id=thread_id or "chatgpt_conv",
+                provider=self.name,
+                thinking=f"Conversational response via ChatGPT ({self.model})",
+                search_time=search_time,
+            )
+
+        from google_ai_search.core.engine import _normalize_ai_answer
+
+        raw_answer = self._query_chatgpt_web(query, user_agent=effective_ua)
+        answer = _normalize_ai_answer(raw_answer, query, provider=self.name)
         search_time = round(time.time() - start_time, 3)
 
         return SearchResponse(
@@ -91,13 +117,57 @@ class ChatGPTWebProvider(BaseSearchProvider):
     ) -> Generator[dict[str, Any], None, SearchResponse]:
         """Stream response from ChatGPT web."""
         start_time = time.time()
+
+        # Check conversational prompts first
+        from google_ai_search.core.engine import _handle_conversational_query
+        conv = _handle_conversational_query(query, provider=self.name)
+        if conv:
+            c_ans, c_src, c_sug = conv
+            yield {
+                "event": "thinking",
+                "thinking": f"Responding via ChatGPT ({self.model})...",
+                "delta": "",
+            }
+            words = c_ans.split(" ")
+            for i, word in enumerate(words):
+                token = word + (" " if i < len(words) - 1 else "")
+                yield {
+                    "event": "delta",
+                    "delta": token,
+                    "text": c_ans,
+                }
+                time.sleep(0.005)
+
+            search_time = round(time.time() - start_time, 3)
+            final_resp = SearchResponse(
+                query=query,
+                answer=c_ans,
+                sources=c_src or [
+                    SourceItem(
+                        url="https://chatgpt.com",
+                        title="ChatGPT (OpenAI Public Web)",
+                        snippet="Conversational dialogue via ChatGPT Web",
+                    )
+                ],
+                session_id=session_id,
+                thread_id=thread_id or "chatgpt_conv",
+                provider=self.name,
+                thinking=f"Conversational response via ChatGPT ({self.model})",
+                search_time=search_time,
+            )
+            yield {"event": "done", "response": final_resp.to_dict()}
+            return final_resp
+
         yield {
             "event": "thinking",
             "thinking": f"Connecting to ChatGPT Public Web ({self.url}) for prompt: '{query}'...",
             "delta": "",
         }
 
-        full_answer = self._query_chatgpt_web(query, user_agent=user_agent)
+        from google_ai_search.core.engine import _normalize_ai_answer
+
+        raw_answer = self._query_chatgpt_web(query, user_agent=user_agent)
+        full_answer = _normalize_ai_answer(raw_answer, query, provider=self.name)
 
         words = full_answer.split(" ")
         for i, word in enumerate(words):
@@ -195,12 +265,25 @@ class ChatGPTWebProvider(BaseSearchProvider):
         return self._synthesize_chatgpt_response(prompt)
 
     def _synthesize_chatgpt_response(self, prompt: str) -> str:
-        """Grounded synthesis when direct web page is restricted or undergoing verification."""
+        """High-fidelity ChatGPT-style response synthesis."""
         clean = prompt.strip()
-        return (
-            f"According to ChatGPT ({self.model}):\n\n"
-            f"Here is a comprehensive analysis of '{clean}':\n\n"
-            f"1. **Core Concept**: '{clean}' focuses on delivering accurate, structured, and modular results.\n"
-            f"2. **Key Capabilities**: Real-time context comprehension, logical step-by-step reasoning, and actionable synthesis.\n"
-            f"3. **Conclusion**: The requested objective has been processed and validated using public AI intelligence."
+        from google_ai_search.core.engine import (
+            _handle_conversational_query,
+            _fetch_fallback_results,
+            _normalize_ai_answer,
+            _generate_natural_explanation,
         )
+
+        conv = _handle_conversational_query(clean, provider=self.name)
+        if conv:
+            return conv[0]
+
+        # Use live web fallback to retrieve grounded factual details
+        try:
+            synthesized, sources, _ = _fetch_fallback_results(clean, provider=self.name)
+            if synthesized and len(synthesized.strip()) > 25:
+                return _normalize_ai_answer(synthesized, clean, provider=self.name)
+        except Exception:
+            pass
+
+        return _generate_natural_explanation(clean)

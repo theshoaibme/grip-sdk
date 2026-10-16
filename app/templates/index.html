@@ -15,12 +15,12 @@
       --surface: #0f1118;
       --surface-elevated: #151824;
       --surface-hover: #1e2233;
-      --border: rgba(255, 255, 255, 0.09);
-      --border-subtle: rgba(255, 255, 255, 0.05);
-      --border-focus: #6366f1;
+      --border: transparent;
+      --border-subtle: transparent;
+      --border-focus: transparent;
       --accent: #6366f1;
       --accent-hover: #4f46e5;
-      --accent-glow: rgba(99, 102, 241, 0.35);
+      --accent-glow: transparent;
       --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
       --text: #f3f4f6;
       --text-muted: #9ca3af;
@@ -40,6 +40,8 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      box-shadow: none !important;
+      border: none !important;
     }
 
     /* Custom Scrollbar */
@@ -134,7 +136,6 @@
       font-size: 13px;
       font-weight: 800;
       letter-spacing: -0.5px;
-      box-shadow: 0 0 16px var(--accent-glow);
     }
 
     .brand-name {
@@ -273,7 +274,6 @@
       height: 6px;
       background: #10b981;
       border-radius: 50%;
-      box-shadow: 0 0 8px #10b981;
     }
 
     .btn-clear {
@@ -377,7 +377,6 @@
 
     .provider-select:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 10px var(--accent-glow);
     }
 
     .btn-topbar-action {
@@ -410,7 +409,6 @@
       padding: 1px 6px;
       border-radius: 9999px;
       line-height: 1.2;
-      box-shadow: 0 0 8px var(--accent-glow);
     }
 
     /* Chat Scroll Area */
@@ -452,7 +450,6 @@
       font-weight: 800;
       margin-bottom: 16px;
       letter-spacing: -1px;
-      box-shadow: 0 0 28px var(--accent-glow);
     }
 
     .empty-title {
@@ -497,7 +494,6 @@
       border-color: rgba(99, 102, 241, 0.4);
       color: #ffffff;
       transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
     }
 
     /* Message Rows */
@@ -519,7 +515,6 @@
       max-width: 78%;
       white-space: pre-wrap;
       word-break: break-word;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
     }
 
     .ai-turn {
@@ -867,14 +862,12 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .input-box:focus-within {
       background: rgba(20, 24, 40, 0.98);
       border-color: rgba(99, 102, 241, 0.55);
-      box-shadow: 0 0 0 1.5px rgba(99, 102, 241, 0.35), 0 24px 54px -8px rgba(0, 0, 0, 0.75), 0 0 20px rgba(99, 102, 241, 0.15);
     }
 
     .attachments-bar {
@@ -899,7 +892,6 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
     .att-del {
@@ -1063,12 +1055,10 @@
       background: var(--accent-gradient);
       color: #ffffff;
       cursor: pointer;
-      box-shadow: 0 2px 12px rgba(99, 102, 241, 0.45);
     }
 
     .btn-submit.is-active:hover:not(:disabled) {
       transform: scale(1.06);
-      box-shadow: 0 4px 18px rgba(99, 102, 241, 0.65);
     }
 
     .btn-submit.is-active:active:not(:disabled) {
@@ -1079,13 +1069,12 @@
       background: #ef4444 !important;
       color: #ffffff !important;
       cursor: pointer !important;
-      box-shadow: 0 0 16px rgba(239, 68, 68, 0.5) !important;
       animation: stopPulse 1.8s infinite ease-in-out;
     }
 
     @keyframes stopPulse {
-      0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
-      50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.7); }
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 1; }
     }
 
     .btn-submit svg {
@@ -1131,7 +1120,6 @@
       width: 100%;
       max-width: 680px;
       border-radius: 24px;
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -1301,7 +1289,6 @@
 
     .rules-textarea:focus, .rules-input:focus, .rules-select:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 10px var(--accent-glow);
     }
 
     .new-rule-row {
@@ -1330,7 +1317,6 @@
       cursor: pointer;
       transition: all 0.15s ease;
       white-space: nowrap;
-      box-shadow: 0 0 10px var(--accent-glow);
     }
 
     .btn-rule-add:hover {
@@ -1489,12 +1475,10 @@
       font-family: var(--font-sans);
       cursor: pointer;
       transition: all 0.15s ease;
-      box-shadow: 0 0 14px var(--accent-glow);
     }
 
     .btn-modal-primary:hover {
       transform: scale(1.02);
-      box-shadow: 0 0 20px var(--accent-glow);
     }
 
     .btn-modal-secondary {
@@ -1528,7 +1512,6 @@
         bottom: 0;
         left: 0;
         transform: translateX(-100%);
-        box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
       }
       .sidebar.open {
         transform: translateX(0);
@@ -2107,19 +2090,24 @@
 
         // Code blocks: ```lang\ncode\n```
         text = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-          return `<pre style="background:#111114; padding:14px 16px; border-radius:10px; overflow-x:auto; margin:14px 0; font-family:var(--font-mono); font-size:13px; line-height:1.6; color:#e4e4e7; border:none;"><code class="language-${lang}">${code.trim()}</code></pre>`;
+          const l = lang || 'code';
+          const encoded = encodeURIComponent(code.trim());
+          return `<div style="background:#0e111a; border-radius:10px; margin:14px 0; overflow:hidden;"><div style="display:flex; justify-content:space-between; align-items:center; background:#161922; padding:6px 14px; font-size:11.5px; font-family:var(--font-mono); color:#9ca3af;"><span>${l}</span><button onclick="navigator.clipboard.writeText(decodeURIComponent('${encoded}')).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1800);})" style="background:transparent; border:none; color:#9ca3af; cursor:pointer; font-size:11.5px; font-family:var(--font-mono); padding:2px 6px;">Copy</button></div><pre style="padding:14px 16px; overflow-x:auto; font-family:var(--font-mono); font-size:13px; line-height:1.6; color:#e4e4e7; margin:0; background:transparent;"><code>${code.trim()}</code></pre></div>`;
         });
 
         // Inline code: `code`
         text = text.replace(/`([^`\n]+)`/g, '<code style="background:rgba(255,255,255,0.08); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:12.5px; color:#f4f4f5; border:none;">$1</code>');
 
         // Markdown Links: [text](url)
-        text = text.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#60a5fa; text-decoration:underline; text-underline-offset:2px;">$1</a>');
+        text = text.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#818cf8; text-decoration:underline; text-underline-offset:2px;">$1</a>');
 
         // Headers
-        text = text.replace(/^### (.*?)$/gm, '<h3 style="font-size:15px; font-weight:600; color:#fff; margin:16px 0 8px 0;">$1</h3>');
-        text = text.replace(/^## (.*?)$/gm, '<h2 style="font-size:17px; font-weight:600; color:#fff; margin:18px 0 10px 0;">$1</h2>');
-        text = text.replace(/^# (.*?)$/gm, '<h1 style="font-size:19px; font-weight:600; color:#fff; margin:20px 0 12px 0;">$1</h1>');
+        text = text.replace(/^### (.*?)$/gm, '<h3 style="font-size:15px; font-weight:600; color:#fff; margin:16px 0 8px 0; letter-spacing:-0.2px;">$1</h3>');
+        text = text.replace(/^## (.*?)$/gm, '<h2 style="font-size:17px; font-weight:600; color:#fff; margin:18px 0 10px 0; letter-spacing:-0.3px;">$1</h2>');
+        text = text.replace(/^# (.*?)$/gm, '<h1 style="font-size:19px; font-weight:600; color:#fff; margin:20px 0 12px 0; letter-spacing:-0.4px;">$1</h1>');
+
+        // Blockquotes: > text
+        text = text.replace(/^> (.*?)$/gm, '<blockquote style="border-left:3px solid var(--accent); margin:10px 0; padding:4px 14px; color:var(--text-muted); background:rgba(99,102,241,0.05); border-radius:0 6px 6px 0;">$1</blockquote>');
 
         // Bold: **text**
         text = text.replace(/\*\*([^*\n]+)\*\*/g, '<strong style="color:#ffffff; font-weight:600;">$1</strong>');
@@ -2128,18 +2116,23 @@
         text = text.replace(/\*([^*\n]+)\*/g, '<em style="color:#d4d4d8;">$1</em>');
 
         // Bullet list lines: • or - or *
-        text = text.replace(/^[•\-\*] (.*?)$/gm, '<li style="margin-left:18px; margin-bottom:4px; color:var(--text);">$1</li>');
+        text = text.replace(/^[•\-\*] (.*?)$/gm, '<li style="margin-bottom:6px; color:var(--text);">$1</li>');
 
         // Numbered list lines: 1. 2.
-        text = text.replace(/^(\d+)\.\s+(.*?)$/gm, '<li style="margin-left:18px; margin-bottom:4px; color:var(--text); list-style-type:decimal;">$2</li>');
+        text = text.replace(/^(\d+)\.\s+(.*?)$/gm, '<li style="margin-bottom:6px; color:var(--text); list-style-type:decimal;">$2</li>');
 
-        // Paragraph breaks
-        const blocks = text.split(/\n\n+/);
-        return blocks.map(b => {
+        // Paragraph breaks and grouping lists
+        const rawBlocks = text.split(/\n\n+/);
+        return rawBlocks.map(b => {
           b = b.trim();
           if (!b) return '';
-          if (b.startsWith('<pre') || b.startsWith('<h1') || b.startsWith('<h2') || b.startsWith('<h3') || b.startsWith('<li')) {
+          if (b.startsWith('<div style="background:#0e111a') || b.startsWith('<h1') || b.startsWith('<h2') || b.startsWith('<h3') || b.startsWith('<blockquote')) {
             return b;
+          }
+          if (b.startsWith('<li')) {
+            const isNumbered = b.includes('list-style-type:decimal');
+            const tag = isNumbered ? 'ol' : 'ul';
+            return `<${tag} style="margin:8px 0 14px 22px; padding:0; line-height:1.7;">${b}</${tag}>`;
           }
           return `<p style="margin-bottom:12px; line-height:1.7;">${b.replace(/\n/g, '<br>')}</p>`;
         }).join('');
@@ -2318,7 +2311,7 @@
         if (isBlocked) {
           return `
             <div class="ai-turn">
-              <div class="ai-card" style="background:rgba(239, 68, 68, 0.08); border-radius:12px; padding:20px 24px; border:1px solid rgba(239, 68, 68, 0.3);">
+              <div class="ai-card" style="background:rgba(239, 68, 68, 0.08); border-radius:12px; padding:20px 24px;">
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                   <span style="font-size:1.25rem;">🛡️</span>
                   <span style="font-weight:600; color:#f87171; font-size:0.95rem;">Google Automated Browser Verification Triggered</span>
@@ -2326,7 +2319,7 @@
                 <p style="color:#a1a1aa; font-size:0.875rem; line-height:1.6; margin-bottom:14px;">
                   Google presented an automated browser verification challenge for this query. The engine has enhanced stealth, but you can also resolve or bypass it immediately with these actions:
                 </p>
-                <div style="background:#09090b; border-radius:8px; padding:14px 16px; margin-bottom:16px; font-family:monospace; font-size:0.82rem; color:#e4e4e7; line-height:1.8; border:1px solid var(--border);">
+                <div style="background:#09090b; border-radius:8px; padding:14px 16px; margin-bottom:16px; font-family:monospace; font-size:0.82rem; color:#e4e4e7; line-height:1.8;">
                   <div style="color:#71717a;"># 1. Complete verification once in visible Chrome:</div>
                   <div style="color:#38bdf8;">grip verify <span style="color:#71717a;">(or: make verify)</span></div>
                   <div style="color:#71717a; margin-top:8px;"># 2. Or run browser visibly in .env:</div>
@@ -2335,7 +2328,7 @@
                   <div style="color:#fcd34d;">PROXY_SERVER=http://proxy-host:port</div>
                 </div>
                 <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                  <button class="rule-btn" onclick="clearProfileCookies()" style="background:#27272a; color:#f4f4f5; padding:8px 16px; border-radius:8px; font-size:0.85rem; cursor:pointer; border:1px solid var(--border);">
+                  <button class="rule-btn" onclick="clearProfileCookies()" style="background:#27272a; color:#f4f4f5; padding:8px 16px; border-radius:8px; font-size:0.85rem; cursor:pointer; border:none;">
                     Clear Profile Cookies
                   </button>
                   <span id="clearProfileMsg" style="font-size:0.8rem; color:#10b981; display:none;">Cookies cleared! Retry query now.</span>
@@ -2347,7 +2340,7 @@
 
         return `
           <div class="ai-turn">
-            <div class="ai-card" style="background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.28); border-radius:12px; padding:14px 18px; margin:4px 0;">
+            <div class="ai-card" style="background:rgba(239, 68, 68, 0.08); border-radius:12px; padding:14px 18px; margin:4px 0;">
               <div style="display:flex; align-items:center; gap:10px; color:#fca5a5; font-size:14px;">
                 <span style="font-size:16px;">⚠️</span>
                 <span>${escapeHtml(message || 'An error occurred during search')}</span>
