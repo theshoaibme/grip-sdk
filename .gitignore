@@ -33,3 +33,6 @@ data/sessions/
 .idea/
 *.swp
 *.swo
+
+# Agents / tooling scratch
+.agents/

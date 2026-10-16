@@ -2,7 +2,7 @@
 
 import pytest
 
-from grip_core.errors import ProviderError
+from core.errors import ProviderError
 from grip_engine.providers.base import BaseSearchProvider
 from grip_engine.providers.openai_search import OpenAISearchProvider
 from grip_engine.providers.registry import ProviderRegistry

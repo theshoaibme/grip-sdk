@@ -14,9 +14,9 @@ from google_ai_search.core.profile import (
     get_anti_detection_client_hints,
     get_chrome_profile,
 )
-from grip_core.errors import ProviderError
-from grip_core.models.response import SearchResponse
-from grip_core.models.source import SourceItem
+from core.errors import ProviderError
+from core.models.response import SearchResponse
+from core.models.source import SourceItem
 from .base import BaseSearchProvider
 
 logger = logging.getLogger("grip.providers.chatgpt_web")

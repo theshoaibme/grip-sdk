@@ -23,9 +23,9 @@ from typing import Any
 # Ensure local monorepo packages are discoverable if not globally installed
 _ROOT = Path(__file__).resolve().parent.parent
 for _p in [
-    _ROOT / "packages" / "grip-python" / "src",
-    _ROOT / "packages" / "grip-core" / "src",
-    _ROOT / "engine" / "src",
+    _ROOT / "packages" / "sdk" / "src",
+    _ROOT / "packages" / "core" / "src",
+    _ROOT / "packages" / "engine" / "src",
     _ROOT,
 ]:
     _p_str = str(_p)

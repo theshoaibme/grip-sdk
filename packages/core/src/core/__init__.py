@@ -1,4 +1,4 @@
-"""grip-core: Shared domain models, protocols, and security validations for Grip Platform."""
+"""core: Shared domain models, protocols, and security validations for Grip Platform."""
 
 from .config import GripConfig, load_config
 from .errors import (
@@ -23,7 +23,7 @@ from .models import (
 from .protocols import FormatterProtocol, SearchProviderProtocol, SessionStoreProtocol
 from .security import sanitize_session_id, validate_query
 
-__version__ = "0.3.0"
+__version__ = "0.3.4"
 
 __all__ = [
     "GripConfig",

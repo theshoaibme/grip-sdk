@@ -160,3 +160,33 @@ def test_grip_client_create_agent_shorthand():
     assert agent.name == "AnalystAgent"
     assert agent.provider == "google"
     assert agent.model == "gemini-2.5-flash"
+
+
+def test_agent_rules_inheritance_and_compilation():
+    """Verify agent inherits client rules and compiles them into prompt directives."""
+    client = grip.Grip()
+    client.rules.set_identity("You are a senior biotech research scientist.")
+    client.rules.set_response_format("Output strictly valid markdown bullet points.")
+    client.rules.add("Always cite peer-reviewed DOI references.", name="doi_citations", priority=1)
+
+    agent = client.create_agent(
+        name="BiotechAgent",
+        provider="google",
+        instructions="Synthesize clinical trial data.",
+    )
+
+    # Agent inherits rules registry from client
+    assert agent.rules is not None
+    assert agent.rules.get_identity() == "You are a senior biotech research scientist."
+
+    # Add agent-level rule
+    agent.add_rule("Never disclose unpublished trial participant identifiers.", name="privacy", priority=2)
+
+    compiled = agent.rules.compile()
+    assert "[SYSTEM IDENTITY]" in compiled
+    assert "senior biotech research scientist" in compiled
+    assert "[RESPONSE FORMAT INSTRUCTIONS]" in compiled
+    assert "markdown bullet points" in compiled
+    assert "[STRICT BEHAVIORAL RULES]" in compiled
+    assert "Always cite peer-reviewed DOI references." in compiled
+    assert "Never disclose unpublished trial participant identifiers." in compiled

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from grip import Grip, SearchResponse, SourceItem, StreamChunk
-from grip_core.models.session import SessionDetail
+from core.models.session import SessionDetail
 
 
 def test_grip_client_initialization():

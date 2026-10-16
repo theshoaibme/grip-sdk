@@ -12,7 +12,7 @@ from google_ai_search.core.profile import (
     is_profile_locked,
 )
 from grip import Grip
-from grip_core.models.response import SearchResponse
+from core.models.response import SearchResponse
 
 
 def test_detect_system_chrome_version():

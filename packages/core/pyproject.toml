@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "grip-core"
-version = "0.3.0"
-description = "Core shared protocols, models, and validation for Grip Platform"
+name = "core"
+version = "0.3.4"
+description = "Core shared protocols, models, validation, and browser search engine for the Grip Platform"
 requires-python = ">=3.10"
 readme = "README.md"
 license = { text = "MIT" }
@@ -15,3 +15,7 @@ dependencies = []
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["core*", "google_ai_search*"]
+
+[tool.setuptools.package-data]
+google_ai_search = ["templates/*.html", "server/templates/*.html"]

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grip-engine"
-version = "0.3.0"
+version = "0.3.4"
 description = "Grip Platform Search Engine with Dynamic Multi-Provider Architecture"
 requires-python = ">=3.10"
 readme = "README.md"

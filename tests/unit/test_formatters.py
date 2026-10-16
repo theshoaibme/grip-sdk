@@ -1,6 +1,6 @@
 """Unit tests for response formatters."""
 
-from grip_core.models.response import SearchResponse, SourceItem
+from core.models.response import SearchResponse, SourceItem
 from grip_engine.formatters.base import FormatterRegistry
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator, Generator
 from typing import TYPE_CHECKING, Any
 
-from grip_core.models.response import SearchResponse, StreamChunk
+from core.models.response import SearchResponse, StreamChunk
 
 if TYPE_CHECKING:
     from ..client import Grip
@@ -25,8 +25,9 @@ class SearchResource:
         session_id: str | None = None,
         provider: str | None = None,
         thread_id: str | None = None,
-        timeout: float | None = None,
+        timeout: float | tuple[float, float] | None = None,
         user_agent: str | None = None,
+        fallback: str | list[str] | None = None,
     ) -> SearchResponse:
         return self.query(
             query=query,
@@ -35,6 +36,7 @@ class SearchResource:
             thread_id=thread_id,
             timeout=timeout,
             user_agent=user_agent,
+            fallback=fallback,
         )
 
     def query(
@@ -44,13 +46,16 @@ class SearchResource:
         session_id: str | None = None,
         provider: str | None = None,
         thread_id: str | None = None,
-        timeout: float | None = None,
+        timeout: float | tuple[float, float] | None = None,
         user_agent: str | None = None,
+        fallback: str | list[str] | None = None,
     ) -> SearchResponse:
-        """Execute an AI search query with optional session, provider, and authentic client user_agent."""
+        """Execute an AI search query with optional session, provider, fallback, and authentic client user_agent."""
         kwargs: dict[str, Any] = {}
         if user_agent is not None:
             kwargs["user_agent"] = user_agent
+        if fallback is not None:
+            kwargs["fallback"] = fallback
         return self._client._execute_query(
             query=query,
             session_id=session_id,
@@ -68,11 +73,14 @@ class SearchResource:
         provider: str | None = None,
         thread_id: str | None = None,
         user_agent: str | None = None,
+        fallback: str | list[str] | None = None,
     ) -> Generator[StreamChunk, None, SearchResponse]:
         """Stream an AI search response token by token with authentic client user_agent."""
         kwargs: dict[str, Any] = {}
         if user_agent is not None:
             kwargs["user_agent"] = user_agent
+        if fallback is not None:
+            kwargs["fallback"] = fallback
         return self._client._execute_stream(
             query=query,
             session_id=session_id,
@@ -80,6 +88,7 @@ class SearchResource:
             thread_id=thread_id,
             **kwargs,
         )
+
 
 
 class AsyncSearchResource:
@@ -95,8 +104,9 @@ class AsyncSearchResource:
         session_id: str | None = None,
         provider: str | None = None,
         thread_id: str | None = None,
-        timeout: float | None = None,
+        timeout: float | tuple[float, float] | None = None,
         user_agent: str | None = None,
+        fallback: str | list[str] | None = None,
     ) -> SearchResponse:
         return await self.query(
             query=query,
@@ -105,6 +115,7 @@ class AsyncSearchResource:
             thread_id=thread_id,
             timeout=timeout,
             user_agent=user_agent,
+            fallback=fallback,
         )
 
     async def query(
@@ -114,13 +125,16 @@ class AsyncSearchResource:
         session_id: str | None = None,
         provider: str | None = None,
         thread_id: str | None = None,
-        timeout: float | None = None,
+        timeout: float | tuple[float, float] | None = None,
         user_agent: str | None = None,
+        fallback: str | list[str] | None = None,
     ) -> SearchResponse:
-        """Asynchronously execute an AI search query."""
+        """Asynchronously execute an AI search query with optional fallback."""
         kwargs: dict[str, Any] = {}
         if user_agent is not None:
             kwargs["user_agent"] = user_agent
+        if fallback is not None:
+            kwargs["fallback"] = fallback
         return await self._client._execute_query(
             query=query,
             session_id=session_id,
@@ -138,11 +152,14 @@ class AsyncSearchResource:
         provider: str | None = None,
         thread_id: str | None = None,
         user_agent: str | None = None,
+        fallback: str | list[str] | None = None,
     ) -> AsyncGenerator[StreamChunk, None]:
-        """Asynchronously stream an AI search response."""
+        """Asynchronously stream an AI search response with optional fallback."""
         kwargs: dict[str, Any] = {}
         if user_agent is not None:
             kwargs["user_agent"] = user_agent
+        if fallback is not None:
+            kwargs["fallback"] = fallback
         async for chunk in self._client._execute_stream(
             query=query,
             session_id=session_id,
@@ -151,3 +168,4 @@ class AsyncSearchResource:
             **kwargs,
         ):
             yield chunk
+

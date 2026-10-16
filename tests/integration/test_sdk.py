@@ -8,8 +8,8 @@ import responses
 
 from grip import Grip, AsyncGrip, SearchResponse, SourceItem, StreamChunk
 from grip.cli.main import main as cli_main
-from grip_core.errors import ProviderError
-from grip_core.models.session import SessionDetail, SessionSummary
+from core.errors import ProviderError
+from core.models.session import SessionDetail, SessionSummary
 
 
 def test_sdk_full_search_cycle():

@@ -126,6 +126,7 @@ class Agent:
         system_prompt: str | None = None,
         client: Any = None,
         tools: list[Tool | Callable[..., Any]] | None = None,
+        rules: list[Any] | Any | None = None,
         mcp_clients: list[MCPClient] | None = None,
         max_steps: int = 10,
         temperature: float = 0.7,
@@ -143,6 +144,19 @@ class Agent:
         else:
             import grip
             self._client = grip.Grip()
+
+        # Rules Registry (inherit from client or instantiate)
+        from google_ai_search.agent.rules import RulesRegistry
+        if isinstance(rules, RulesRegistry):
+            self.rules = rules
+        elif hasattr(self._client, "rules") and self._client.rules is not None:
+            self.rules = self._client.rules
+        else:
+            self.rules = RulesRegistry()
+
+        if isinstance(rules, (list, tuple)):
+            for r in rules:
+                self.rules.add(r)
 
         # Tool Registry
         self.tools = ToolRegistry(load_builtins=True)
@@ -163,6 +177,15 @@ class Agent:
 
         # Conversational message history
         self.history: list[dict[str, str]] = []
+
+    def add_rule(
+        self,
+        rule_or_content: str | Any,
+        name: str | None = None,
+        priority: int = 1,
+    ) -> Any:
+        """Add a behavioral rule or constraint to this agent."""
+        return self.rules.add(rule_or_content, name=name, priority=priority)
 
     def _register_search_tool(self) -> None:
         """Register the agent's web search capability."""
@@ -341,8 +364,12 @@ class Agent:
             for t in self.tools.list()
         )
 
+        # Compile active behavioral rules, identity, and format constraints
+        compiled_rules = self.rules.compile() if hasattr(self, "rules") and self.rules else ""
+        system_directives = f"{self.instructions}\n\n{compiled_rules}".strip() if compiled_rules else self.instructions
+
         current_prompt = (
-            f"{self.instructions}\n\n"
+            f"{system_directives}\n\n"
             f"Provider: {self.provider}\n"
             f"Model: {self.model}\n\n"
             f"Available Tools:\n{tool_descriptions}\n\n"

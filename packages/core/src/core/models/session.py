@@ -8,8 +8,11 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+from .base import DictAccessMixin
+
+
 @dataclass
-class SessionMessage:
+class SessionMessage(DictAccessMixin):
     """A single conversational turn (user prompt or AI response)."""
 
     role: str  # "user" | "assistant" | "system"
@@ -35,7 +38,7 @@ class SessionMessage:
 
 
 @dataclass
-class SessionSummary:
+class SessionSummary(DictAccessMixin):
     """Compact summary of an active session."""
 
     session_id: str
@@ -57,7 +60,8 @@ class SessionSummary:
 
 
 @dataclass
-class SessionDetail:
+class SessionDetail(DictAccessMixin):
+
     """Detailed session object with complete multi-turn conversation messages."""
 
     session_id: str

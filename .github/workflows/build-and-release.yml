@@ -36,9 +36,9 @@ jobs:
       - name: Collect Distribution Artifacts
         run: |
           mkdir -p artifacts
-          cp -r packages/grip-core/dist/* artifacts/ 2>/dev/null || true
-          cp -r packages/grip-python/dist/* artifacts/ 2>/dev/null || true
-          cp -r engine/dist/* artifacts/ 2>/dev/null || true
+          cp -r packages/core/dist/* artifacts/ 2>/dev/null || true
+          cp -r packages/engine/dist/* artifacts/ 2>/dev/null || true
+          cp -r packages/sdk/dist/* artifacts/ 2>/dev/null || true
           ls -la artifacts/
 
       - name: Upload Build Artifacts
@@ -61,7 +61,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages-dir: packages/grip-python/dist/
+          packages-dir: packages/sdk/dist/
           skip-existing: true
         env:
           HAVE_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN != '' }}

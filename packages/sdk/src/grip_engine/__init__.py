@@ -42,7 +42,7 @@ from .infrastructure import (
     TokenBucket,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.3.4"
 
 __all__ = [
     "GripEngine",

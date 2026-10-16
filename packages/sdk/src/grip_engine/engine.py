@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Generator
 
 from google_ai_search.config import Config, get_config
-from grip_core.models.response import SearchResponse
+from core.models.response import SearchResponse
 from .infrastructure.session_store import SessionStore
 from .providers.base import BaseSearchProvider
 from .providers.google_search import GoogleSearchProvider

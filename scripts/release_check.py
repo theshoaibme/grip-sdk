@@ -13,9 +13,9 @@ ROOT = Path(__file__).resolve().parent.parent
 # Ensure all source directories are in sys.path
 for p in [
     ROOT,
-    ROOT / "packages" / "grip-core" / "src",
-    ROOT / "packages" / "grip-python" / "src",
-    ROOT / "engine" / "src",
+    ROOT / "packages" / "core" / "src",
+    ROOT / "packages" / "engine" / "src",
+    ROOT / "packages" / "sdk" / "src",
 ]:
     p_str = str(p)
     if p_str not in sys.path:
@@ -27,14 +27,14 @@ def check_tests() -> bool:
     current_pythonpath = os.environ.get("PYTHONPATH", "")
     expected_paths = [
         str(ROOT),
-        str(ROOT / "packages" / "grip-core" / "src"),
-        str(ROOT / "packages" / "grip-python" / "src"),
-        str(ROOT / "engine" / "src"),
+        str(ROOT / "packages" / "core" / "src"),
+        str(ROOT / "packages" / "engine" / "src"),
+        str(ROOT / "packages" / "sdk" / "src"),
     ]
     env = os.environ.copy()
     env["PYTHONPATH"] = os.pathsep.join(expected_paths + ([current_pythonpath] if current_pythonpath else []))
 
-    cmd = [sys.executable, "-m", "pytest", "-v", "tests/", "packages/grip-python/tests/"]
+    cmd = [sys.executable, "-m", "pytest", "-v", "tests/", "packages/sdk/tests/"]
     result = subprocess.run(cmd, cwd=ROOT, env=env)
     return result.returncode == 0
 
@@ -43,7 +43,7 @@ def check_imports() -> bool:
     print("🔍 Checking package imports and provider registrations...")
     try:
         import grip
-        import grip_core
+        import core
         import grip_engine
         from grip_engine.providers.registry import default_provider_registry
 

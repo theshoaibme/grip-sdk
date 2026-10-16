@@ -11,10 +11,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 PACKAGES = [
-    ROOT / "packages" / "grip-core",
-    ROOT / "packages" / "grip-python",
-    ROOT / "engine",
+    ROOT / "packages" / "core",
+    ROOT / "packages" / "engine",
+    ROOT / "packages" / "sdk",
 ]
+
+
+def sync_vendored() -> bool:
+    print("🔄 Syncing vendored mirrors before build...")
+    result = subprocess.run([sys.executable, str(ROOT / "scripts" / "sync_vendored.py")], cwd=ROOT)
+    return result.returncode == 0
 
 
 def build_package(pkg_path: Path) -> bool:
@@ -26,6 +32,9 @@ def build_package(pkg_path: Path) -> bool:
 
 def main() -> int:
     print("🚀 Starting Grip Platform Build Pipeline\n")
+    if not sync_vendored():
+        print("❌ Failed to sync vendored mirrors", file=sys.stderr)
+        return 1
     success = True
     for pkg in PACKAGES:
         if (pkg / "pyproject.toml").exists():

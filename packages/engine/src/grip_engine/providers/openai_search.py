@@ -6,8 +6,8 @@ import os
 import time
 from typing import Any, Generator
 
-from grip_core.models.response import SearchResponse
-from grip_core.models.source import SourceItem
+from core.models.response import SearchResponse
+from core.models.source import SourceItem
 from .base import BaseSearchProvider
 
 

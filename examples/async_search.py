@@ -9,7 +9,12 @@ import sys
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
-for _p in [_ROOT / "packages" / "grip-python" / "src", _ROOT / "packages" / "grip-core" / "src", _ROOT]:
+for _p in [
+    _ROOT / "packages" / "sdk" / "src",
+    _ROOT / "packages" / "core" / "src",
+    _ROOT / "packages" / "engine" / "src",
+    _ROOT,
+]:
     _s = str(_p)
     if _p.exists() and _s not in sys.path:
         sys.path.insert(0, _s)

@@ -9,7 +9,21 @@ from ._version import __version__
 from .async_client import AsyncClient, AsyncGrip, AsyncGripClient
 from .client import Client, Grip, GripClient
 from .config import ClientConfig, Config, get_config
-from .exceptions import BotBlockedError, ConfigurationError, GripError, ProviderError
+from .exceptions import (
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    AuthenticationError,
+    BotBlockedError,
+    ConfigurationError,
+    GripError,
+    NotFoundError,
+    ProviderError,
+    QuotaExceededError,
+    RateLimitError,
+    SessionNotFoundError,
+    ValidationError,
+)
 from .agent import Agent, AgentResult, AgentStep, MCPClient
 from .types import (
     Metadata,
@@ -54,6 +68,17 @@ __all__ = [
     "SessionMessage",
     "GripError",
     "ProviderError",
+    "QuotaExceededError",
+    "RateLimitError",
     "BotBlockedError",
+    "SessionNotFoundError",
+    "ConfigError",
     "ConfigurationError",
+    "ValidationError",
+    "APIStatusError",
+    "AuthenticationError",
+    "APIConnectionError",
+    "APITimeoutError",
+    "NotFoundError",
 ]
+

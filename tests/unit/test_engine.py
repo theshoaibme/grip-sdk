@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock
 import pytest
 
-from grip_core.models.response import SearchResponse, SourceItem, StreamChunk
+from core.models.response import SearchResponse, SourceItem, StreamChunk
 from grip_engine.engine import GripEngine
 from grip_engine.providers.base import BaseSearchProvider
 

@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator, Generator
 from typing import TYPE_CHECKING, Any
 
-from grip_core.models.response import SearchResponse, StreamChunk
-from grip_core.models.session import SessionDetail, SessionSummary
+from core.models.response import SearchResponse, StreamChunk
+from core.models.session import SessionDetail, SessionSummary
 
 if TYPE_CHECKING:
     from ..client import Grip
@@ -53,13 +53,15 @@ class SessionsResource:
         query: str,
         *,
         provider: str | None = None,
-        timeout: float | None = None,
+        timeout: float | tuple[float, float] | None = None,
+        fallback: str | list[str] | None = None,
     ) -> SearchResponse:
         return self._client._execute_query(
             query=query,
             session_id=session_id,
             provider=provider,
             timeout=timeout,
+            fallback=fallback,
         )
 
     def stream(
@@ -68,12 +70,15 @@ class SessionsResource:
         query: str,
         *,
         provider: str | None = None,
+        fallback: str | list[str] | None = None,
     ) -> Generator[StreamChunk, None, SearchResponse]:
         return self._client._execute_stream(
             query=query,
             session_id=session_id,
             provider=provider,
+            fallback=fallback,
         )
+
 
 
 class AsyncSessionsResource:
@@ -116,13 +121,15 @@ class AsyncSessionsResource:
         query: str,
         *,
         provider: str | None = None,
-        timeout: float | None = None,
+        timeout: float | tuple[float, float] | None = None,
+        fallback: str | list[str] | None = None,
     ) -> SearchResponse:
         return await self._client._execute_query(
             query=query,
             session_id=session_id,
             provider=provider,
             timeout=timeout,
+            fallback=fallback,
         )
 
     async def stream(
@@ -131,10 +138,13 @@ class AsyncSessionsResource:
         query: str,
         *,
         provider: str | None = None,
+        fallback: str | list[str] | None = None,
     ) -> AsyncGenerator[StreamChunk, None]:
         async for chunk in self._client._execute_stream(
             query=query,
             session_id=session_id,
             provider=provider,
+            fallback=fallback,
         ):
             yield chunk
+

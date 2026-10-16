@@ -1,8 +1,8 @@
 """Security tests for authentication and rate limits."""
 
 import pytest
-from grip_core.security.validation import validate_query, validate_session_id
-from grip_core.errors import ValidationError
+from core.security.validation import validate_query, validate_session_id
+from core.errors import ValidationError
 from grip_engine.infrastructure.rate_limit import RateLimiter
 
 

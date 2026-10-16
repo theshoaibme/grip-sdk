@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Callable
-from grip_core.errors import ProviderError
+from core.errors import ProviderError
 from .base import BaseSearchProvider
 
 logger = logging.getLogger(__name__)

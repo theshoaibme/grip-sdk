@@ -22,6 +22,30 @@ class Metadata(DictAccessMixin):
     request_id: str | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
+    def __init__(
+        self,
+        search_time: float = 0.0,
+        cached: bool = False,
+        provider: str = "grip",
+        timestamp: float | None = None,
+        request_id: str | None = None,
+        extra: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        latency = kwargs.pop("latency", None)
+        self.search_time = latency if latency is not None else search_time
+        self.cached = cached
+        self.provider = provider
+        self.timestamp = timestamp if timestamp is not None else time.time()
+        self.request_id = request_id
+        self.extra = dict(extra or {})
+        if kwargs:
+            self.extra.update(kwargs)
+
+    @property
+    def latency(self) -> float:
+        return self.search_time
+
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
             "search_time": round(self.search_time, 3),
@@ -54,6 +78,50 @@ class SearchResponse(DictAccessMixin):
     timestamp: float = field(default_factory=time.time)
     request_id: str | None = None
     metadata: dict[str, Any] | Metadata = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    def __init__(
+        self,
+        query: str,
+        answer: str,
+        sources: list[SourceItem] | None = None,
+        session_id: str | None = None,
+        thread_id: str | None = None,
+        suggestions: list[str] | None = None,
+        thinking: str | None = None,
+        thinking_time: float | None = None,
+        cached: bool = False,
+        provider: str = "grip",
+        status: str = "success",
+        search_time: float = 0.0,
+        timestamp: float | None = None,
+        request_id: str | None = None,
+        metadata: dict[str, Any] | Metadata | None = None,
+        extra: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        self.query = query
+        self.answer = answer
+        self.sources = list(sources or [])
+        self.session_id = session_id
+        self.thread_id = thread_id
+        self.suggestions = list(suggestions or [])
+        self.thinking = thinking
+        self.thinking_time = thinking_time
+        self.cached = cached
+        self.provider = provider
+        self.status = status
+        self.search_time = search_time
+        self.timestamp = timestamp if timestamp is not None else time.time()
+        self.request_id = request_id
+        self.metadata = metadata if metadata is not None else {}
+        self.extra = dict(extra or {})
+        if kwargs:
+            self.extra.update(kwargs)
+
+    @property
+    def latency(self) -> float:
+        return self.search_time
 
     def to_dict(self) -> dict[str, Any]:
         meta_dict = self.metadata.to_dict() if isinstance(self.metadata, Metadata) else self.metadata
@@ -71,6 +139,7 @@ class SearchResponse(DictAccessMixin):
             "search_time": round(self.search_time, 3),
             "timestamp": self.timestamp,
             "metadata": meta_dict,
+            **self.extra,
         }
         if self.request_id:
             d["request_id"] = self.request_id

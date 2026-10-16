@@ -1,22 +1,34 @@
-.PHONY: dev install test build verify release-check clean
+.PHONY: install dev test verify release-check build sync sync-check clean
 
+# One-time local setup: create the venv and install editable workspace packages.
 install:
 	python3 -m venv .venv
+	.venv/bin/pip install --upgrade pip
 	.venv/bin/pip install -r requirements.txt
-	.venv/bin/pip install --no-deps -e packages/grip-core -e packages/grip-python -e engine
+	.venv/bin/pip install --no-deps -e packages/core -e packages/engine -e packages/sdk
+	.venv/bin/python scripts/sync_vendored.py
 
+# Everything below delegates to the Bun task runner (package.json).
 dev:
-	.venv/bin/python -m app.main
+	bun run dev
 
 test:
-	PYTHONPATH="packages/grip-core/src:packages/grip-python/src:engine/src:." .venv/bin/pytest -v tests/ packages/grip-python/tests/
+	bun run test
+
+verify:
+	bun run verify
 
 release-check:
-	.venv/bin/python scripts/release_check.py
+	bun run verify
 
 build:
-	.venv/bin/python scripts/build.py
+	bun run build
+
+sync:
+	bun run sync
+
+sync-check:
+	bun run sync:check
 
 clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	rm -rf dist build *.egg-info
+	bun run clean
