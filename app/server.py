@@ -88,6 +88,7 @@ def create_app(
         return render_template("index.html", port=cfg.port)
 
     @app.get("/health")
+    @app.get("/api/health")
     def health():
         ready, reason = sdk_client.ready()
         return jsonify({
@@ -170,6 +171,7 @@ def create_app(
     # --- Search Endpoints ---
 
     @app.post("/search")
+    @app.post("/api/search")
     @app.post("/api/v1/search")
     @app.post("/ai-search")
     @app.post("/answer")
@@ -185,12 +187,16 @@ def create_app(
             return error_response("rate limit exceeded", 429, retry_after=retry_after)
 
         session_id = payload.get("session_id") if isinstance(payload, dict) else None
+        provider = payload.get("provider") if isinstance(payload, dict) else None
 
         from google_ai_search.core.profile import extract_client_user_agent
         client_ua = extract_client_user_agent(request)
 
         try:
-            res = sdk_client.search.query(query, session_id=session_id, user_agent=client_ua)
+            kwargs: dict[str, Any] = {"session_id": session_id, "user_agent": client_ua}
+            if provider:
+                kwargs["provider"] = provider
+            res = sdk_client.search.query(query, **kwargs)
             return jsonify(_as_dict(res))
         except BotBlockedError as exc:
             return error_response(str(exc), 403)
@@ -201,6 +207,7 @@ def create_app(
             return error_response("internal search error", 500)
 
     @app.post("/search/stream")
+    @app.post("/api/stream")
     @app.post("/api/v1/search/stream")
     @app.post("/ai-search/stream")
     def search_stream():
@@ -215,6 +222,7 @@ def create_app(
             return error_response("rate limit exceeded", 429, retry_after=retry_after)
 
         session_id = payload.get("session_id") if isinstance(payload, dict) else None
+        provider = payload.get("provider") if isinstance(payload, dict) else None
 
         from google_ai_search.core.profile import extract_client_user_agent
         client_ua = extract_client_user_agent(request)
@@ -222,7 +230,10 @@ def create_app(
         def generate():
             try:
                 delay_sec = max(0.002, (cfg.stream_delay_ms / 1000.0) if hasattr(cfg, "stream_delay_ms") and cfg.stream_delay_ms else 0.01)
-                for chunk in sdk_client.search.stream(query, session_id=session_id, user_agent=client_ua):
+                stream_kwargs: dict[str, Any] = {"session_id": session_id, "user_agent": client_ua}
+                if provider:
+                    stream_kwargs["provider"] = provider
+                for chunk in sdk_client.search.stream(query, **stream_kwargs):
                     cdata = _as_dict(chunk)
                     event_type = cdata.get("event", "message") if isinstance(cdata, dict) else "message"
                     yield _sse(event_type, cdata if isinstance(cdata, dict) else {"content": str(cdata)})
@@ -246,6 +257,7 @@ def create_app(
     # --- Sessions Endpoints ---
 
     @app.post("/sessions")
+    @app.post("/api/sessions")
     @app.post("/api/v1/sessions")
     def create_session():
         payload = request.get_json(silent=True) or {}
@@ -270,6 +282,7 @@ def create_app(
         return jsonify(data), 201
 
     @app.get("/sessions")
+    @app.get("/api/sessions")
     @app.get("/api/v1/sessions")
     def list_sessions():
         limit = request.args.get("limit", default=50, type=int)
@@ -334,9 +347,12 @@ def create_app(
         if not session:
             return error_response(f"session '{session_id}' not found", 404)
 
-        query, err = _validate_query(request.get_json(silent=True))
+        payload = request.get_json(silent=True) or {}
+        query, err = _validate_query(payload)
         if err:
             return err
+
+        provider = payload.get("provider") if isinstance(payload, dict) else None
 
         client_ip = _client_key()
         allowed, retry_after = limiter.check(client_ip)
@@ -352,13 +368,16 @@ def create_app(
         def generate():
             try:
                 delay_sec = max(0.012, (cfg.stream_delay_ms / 1000.0) if hasattr(cfg, "stream_delay_ms") and cfg.stream_delay_ms else 0.02)
+                stream_kwargs: dict[str, Any] = {}
+                if provider:
+                    stream_kwargs["provider"] = provider
                 if hasattr(session, "stream"):
                     try:
-                        stream_gen = session.stream(query, compiled_query=compiled_query)
+                        stream_gen = session.stream(query, compiled_query=compiled_query, **stream_kwargs)
                     except TypeError:
-                        stream_gen = session.stream(compiled_query or query)
+                        stream_gen = session.stream(compiled_query or query, **stream_kwargs)
                 else:
-                    stream_gen = sdk_client.sessions.stream(session_id, compiled_query or query)
+                    stream_gen = sdk_client.sessions.stream(session_id, compiled_query or query, **stream_kwargs)
 
                 for chunk in stream_gen:
                     cdata = _as_dict(chunk)
