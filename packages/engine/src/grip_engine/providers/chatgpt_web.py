@@ -160,7 +160,7 @@ class ChatGPTWebProvider(BaseSearchProvider):
 
         yield {
             "event": "thinking",
-            "thinking": f"Connecting to ChatGPT Public Web ({self.url}) for prompt: '{query}'...",
+            "thinking": f"Synthesizing response for '{query}'...",
             "delta": "",
         }
 

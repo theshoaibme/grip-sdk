@@ -162,7 +162,7 @@ class GeminiWebProvider(BaseSearchProvider):
 
         yield {
             "event": "thinking",
-            "thinking": f"Connecting to Gemini Web App ({self.url}) for prompt: '{query}'...",
+            "thinking": f"Synthesizing response for '{query}'...",
             "delta": "",
         }
 

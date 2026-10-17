@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
+import mimetypes
 import os
+import tempfile
 import time
 from typing import Any
 
-from flask import Flask, Response, jsonify, render_template, request
+from flask import Flask, Response, jsonify, render_template, request, send_from_directory
+
+UPLOAD_FOLDER = os.environ.get("GRIP_UPLOAD_DIR", os.path.join(tempfile.gettempdir(), "grip_uploads"))
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 from ..config import Config, get_config
 from ..core.cache import TTLCache
@@ -446,12 +452,77 @@ def create_app(
         uploaded = request.files["file"]
         if not uploaded.filename:
             return error_response("empty filename", 400)
-        content = uploaded.read().decode("utf-8", errors="replace")
+
+        raw_bytes = uploaded.read()
+        filename = uploaded.filename
+        safe_name = "".join(c for c in filename if c.isalnum() or c in "._- ").strip() or "upload"
+        ext = os.path.splitext(safe_name)[1].lower()
+
+        # Categorize file type
+        image_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".ico", ".tiff"}
+        audio_exts = {".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac", ".webm", ".opus", ".weba"}
+        video_exts = {".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v", ".ogv"}
+
+        mime_type, _ = mimetypes.guess_type(safe_name)
+        if not mime_type:
+            if ext in image_exts:
+                mime_type = f"image/{ext.lstrip('.')}"
+            elif ext in audio_exts:
+                mime_type = f"audio/{ext.lstrip('.')}"
+            elif ext in video_exts:
+                mime_type = f"video/{ext.lstrip('.')}"
+            else:
+                mime_type = "application/octet-stream"
+
+        if ext in image_exts:
+            media_type = "image"
+        elif ext in audio_exts:
+            media_type = "audio"
+        elif ext in video_exts:
+            media_type = "video"
+        else:
+            media_type = "document"
+
+        # Unique saved filename to avoid collisions
+        unique_prefix = f"{int(time.time())}_{os.urandom(4).hex()}"
+        saved_filename = f"{unique_prefix}_{safe_name}"
+        saved_path = os.path.join(UPLOAD_FOLDER, saved_filename)
+        with open(saved_path, "wb") as f:
+            f.write(raw_bytes)
+
+        # Content representation for model context
+        if media_type == "document":
+            try:
+                content = raw_bytes.decode("utf-8")
+            except Exception:
+                content = raw_bytes.decode("utf-8", errors="replace")
+        else:
+            size_kb = round(len(raw_bytes) / 1024, 1)
+            content = f"[Attached {media_type.capitalize()}: {safe_name} ({size_kb} KB)]"
+
+        # Base64 data URL for instant frontend rendering if <= 10MB
+        data_url = None
+        if len(raw_bytes) <= 10 * 1024 * 1024:
+            b64_str = base64.b64encode(raw_bytes).decode("ascii")
+            data_url = f"data:{mime_type};base64,{b64_str}"
+
+        url = f"/uploads/{saved_filename}"
+
         return jsonify({
-            "filename": uploaded.filename.lower(),
-            "size": len(content),
+            "filename": safe_name.lower(),
+            "saved_filename": saved_filename,
+            "size": len(raw_bytes),
             "content": content,
+            "type": media_type,
+            "mime_type": mime_type,
+            "url": url,
+            "data_url": data_url or url,
         }), 201
+
+    @app.get("/uploads/<path:filename>")
+    @app.get("/api/v1/uploads/<path:filename>")
+    def serve_uploaded_file(filename: str):
+        return send_from_directory(UPLOAD_FOLDER, filename)
 
     # --- Agent Capabilities Endpoints ---
 

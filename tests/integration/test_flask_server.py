@@ -201,8 +201,54 @@ def test_flask_rules_and_skills_endpoints(flask_test_app):
 def test_flask_upload_file(flask_test_app):
     client, mock_sdk = flask_test_app
 
+    # 1. Text file upload
     file_data = (io.BytesIO(b"Hello world from test file!"), "test.txt")
     res = client.post("/api/v1/upload", data={"file": file_data}, content_type="multipart/form-data")
     assert res.status_code == 201
     assert res.get_json()["filename"] == "test.txt"
     assert "Hello world" in res.get_json()["content"]
+    assert res.get_json()["type"] == "document"
+
+    # 2. Image upload and serving
+    img_data = (io.BytesIO(b"\x89PNG\r\n\x1a\nfakeimagecontent"), "photo.png")
+    res_img = client.post("/api/v1/upload", data={"file": img_data}, content_type="multipart/form-data")
+    assert res_img.status_code == 201
+    json_img = res_img.get_json()
+    assert json_img["filename"] == "photo.png"
+    assert json_img["type"] == "image"
+    assert "image" in json_img["mime_type"]
+    assert json_img["url"].startswith("/uploads/")
+    assert json_img["data_url"].startswith("data:image/")
+
+    # Verify serving image route
+    served_img = client.get(json_img["url"])
+    assert served_img.status_code == 200
+    assert served_img.data == b"\x89PNG\r\n\x1a\nfakeimagecontent"
+
+    # 3. Audio upload and serving
+    audio_data = (io.BytesIO(b"ID3\x03fakeaudiocontent"), "sample.mp3")
+    res_aud = client.post("/api/v1/upload", data={"file": audio_data}, content_type="multipart/form-data")
+    assert res_aud.status_code == 201
+    json_aud = res_aud.get_json()
+    assert json_aud["filename"] == "sample.mp3"
+    assert json_aud["type"] == "audio"
+    assert "audio" in json_aud["mime_type"]
+    assert json_aud["url"].startswith("/uploads/")
+
+    served_aud = client.get(json_aud["url"])
+    assert served_aud.status_code == 200
+    assert served_aud.data == b"ID3\x03fakeaudiocontent"
+
+    # 4. Video upload and serving
+    video_data = (io.BytesIO(b"\x00\x00\x00\x18ftypisomfakevideocontent"), "clip.mp4")
+    res_vid = client.post("/api/v1/upload", data={"file": video_data}, content_type="multipart/form-data")
+    assert res_vid.status_code == 201
+    json_vid = res_vid.get_json()
+    assert json_vid["filename"] == "clip.mp4"
+    assert json_vid["type"] == "video"
+    assert "video" in json_vid["mime_type"]
+    assert json_vid["url"].startswith("/uploads/")
+
+    served_vid = client.get(json_vid["url"])
+    assert served_vid.status_code == 200
+    assert served_vid.data == b"\x00\x00\x00\x18ftypisomfakevideocontent"

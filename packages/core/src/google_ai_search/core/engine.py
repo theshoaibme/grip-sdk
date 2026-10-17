@@ -1255,7 +1255,6 @@ class GoogleAIModeEngine:
 
         try:
             with _BROWSER_LOCK, sync_playwright() as p:
-                yield {"event": "thinking", "thinking": "Connecting to Google AI Mode and initializing session...", "delta": ""}
                 browser, context = self._launch(p, user_agent=user_agent)
                 try:
                     page = context.new_page()
@@ -1264,14 +1263,11 @@ class GoogleAIModeEngine:
                     if "google.com/search" not in page.url and "google.com/sorry" not in page.url:
                         page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
 
-                    yield {"event": "thinking", "thinking": "Extracting intelligence and synthesizing results...", "delta": ""}
-
                     # Immediate check for bot redirect
                     if "google.com/sorry" in page.url or page.query_selector("#captcha-form, .g-recaptcha, #recaptcha"):
                         if self.config.fallback_on_block:
                             fb_ans, fb_src, fb_sug = _fetch_fallback_results(query)
                             if fb_ans:
-                                yield {"event": "thinking", "thinking": "grounded web search fallback (verification triggered)", "delta": ""}
                                 words = fb_ans.split(" ")
                                 for i, w in enumerate(words):
                                     token = w + (" " if i < len(words) - 1 else "")
@@ -1308,7 +1304,6 @@ class GoogleAIModeEngine:
                             if self.config.fallback_on_block:
                                 fb_ans, fb_src, fb_sug = _fetch_fallback_results(query)
                                 if fb_ans:
-                                    yield {"event": "thinking", "thinking": "grounded web search fallback (verification triggered)", "delta": ""}
                                     words = fb_ans.split(" ")
                                     for i, w in enumerate(words):
                                         token = w + (" " if i < len(words) - 1 else "")
